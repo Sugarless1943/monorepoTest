@@ -17,6 +17,9 @@ importers:
 
   apps/Sub:
     dependencies:
+      '@monorepo/components':
+        specifier: workspace:*
+        version: link:../../packages/components
       vue:
         specifier: ^3.5.25
         version: 3.5.29(typescript@5.9.3)
