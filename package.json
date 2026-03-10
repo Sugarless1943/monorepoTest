@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:sub": "cd apps/Sub && pnpm build"
+    "build:sub": "cd apps/Sub && pnpm build",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +18,15 @@
   },
   "devDependencies": {
     "@types/node": "^25.3.5",
+    "git-format-staged": "^4.0.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
     "prettier": "3.8.1",
     "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "**/*.{js,ts,vue,json,css}": [
+      "git-format-staged --formatter 'prettier --write {}' ."
+    ]
   }
 }
