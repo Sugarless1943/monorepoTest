@@ -1,12 +1,22 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# 获取当前分支名称
+branch_name=$(git branch --show-current)
+
 # 校验提交信息格式
 commit_msg=$(cat "$1")
 
-# 检查是否以bugfix:, feat:, 或 hotfix: 开头
-if ! echo "$commit_msg" | grep -qE '^(bugfix|feature|hotfix|release):'; then
-  echo "错误: 提交信息必须以 bugfix:, feature:, hotfix:, 或 release: 开头"
-  echo "示例: feature: 添加新功能"
+# 检查是否以bugfix:, feat:, feature:, hotfix:, 或 release: 开头
+if ! echo "$commit_msg" | grep -qE '^(bugfix|feat|feature|hotfix|release):'; then
+  echo "错误: 提交信息必须以 bugfix:, feat:, feature:, hotfix:, 或 release: 开头"
+  echo "示例: feat: 添加新功能"
   exit 1
 fi
+
+# 生成新的提交信息，添加分支名称前缀
+new_commit_msg="($branch_name:$commit_msg)"
+
+# 将新的提交信息写回文件
+echo "$new_commit_msg" > "$1"
+
