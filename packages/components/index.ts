@@ -1,2 +1,2 @@
-export * from "./src/MyInput";
-export * from "./src/MySelect";
+export * from './src/MyInput'
+export * from './src/MySelect'

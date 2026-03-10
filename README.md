@@ -14,5 +14,9 @@
     git
     commitizen
     pnpm -Dw add @commitlint/cli @commitlint/config-conventional commitizen cz-git
-```
 
+
+    // 添加全局的，给workspace内的所有子包都安装prettier 需要-w
+    pnpm add --save-dev --save-exact -w prettier
+
+```

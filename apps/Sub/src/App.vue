@@ -1,10 +1,10 @@
 <script setup>
-import { MyInput, MySelect } from "@monorepo/components";
-import { add, toUpperCase } from "@monorepo/utils";
-import { PageA } from "@monorepo/page-a";
+import { MyInput, MySelect } from '@monorepo/components'
+import { add, toUpperCase } from '@monorepo/utils'
+import { PageA } from '@monorepo/page-a'
 
-const sum = add(5, 3);
-const upperCaseText = toUpperCase("hello world");
+const sum = add(5, 3)
+const upperCaseText = toUpperCase('hello world')
 </script>
 
 <template>

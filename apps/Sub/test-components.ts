@@ -1,3 +1,3 @@
-import { MyInput, MySelect } from '@monorepo/components';
+import { MyInput, MySelect } from '@monorepo/components'
 
-console.log('Components imported successfully:', { MyInput, MySelect });
+console.log('Components imported successfully:', { MyInput, MySelect })
