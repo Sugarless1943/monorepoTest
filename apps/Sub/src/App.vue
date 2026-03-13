@@ -2,6 +2,7 @@
 import { MyInput, MySelect } from '@monorepo/components'
 import { add, toUpperCase } from '@monorepo/utils'
 import { PageA } from '@monorepo/page-a'
+import { PageB } from '@monorepo/page-b'
 
 const sum = add(5, 3)
 const upperCaseText = toUpperCase('hello world')
@@ -19,6 +20,7 @@ const upperCaseText = toUpperCase('hello world')
     <div>
       <h2>Page A</h2>
       <PageA />
+      <PageB />
     </div>
   </div>
 </template>
