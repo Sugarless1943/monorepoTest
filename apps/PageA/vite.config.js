@@ -9,7 +9,7 @@ export default defineConfig({
     lib: {
       entry: 'src/index.ts',
       name: 'PageA',
-      fileName: (format) => `page-a.${format}.js`
+      fileName: (format) => `page-a.${format}.js`,
     },
     // 配置 rollup 选项
     rollupOptions: {
@@ -18,9 +18,9 @@ export default defineConfig({
       output: {
         // 全局变量配置
         globals: {
-          vue: 'Vue'
-        }
-      }
-    }
-  }
+          vue: 'Vue',
+        },
+      },
+    },
+  },
 })
