@@ -17,12 +17,18 @@ const router = createRouter({
         {
           path: 'pageA',
           name: 'PageA',
-          component: () => import('../../../PageA/src/index.vue'),
+          component: () =>
+            import(
+              /* webpackChunkName: "page-a" */ '../../../PageA/src/index.vue'
+            ),
         },
         {
           path: 'pageB',
           name: 'PageB',
-          component: () => import('../../../PageB/src/index.vue'),
+          component: () =>
+            import(
+              /* webpackChunkName: "page-b" */ '../../../PageB/src/index.vue'
+            ),
         },
       ],
     },

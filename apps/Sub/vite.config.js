@@ -9,11 +9,11 @@ export default defineConfig({
       output: {
         // 入口文件命名格式
         entryFileNames: 'assets/sub-[name]-[hash].js',
-        // 代码分割生成的 chunk 命名格式
-        chunkFileNames: 'assets/[name]-[hash].js',
+        // 代码分割生成的 chunk 命名格式 - 使用固定名称
+        chunkFileNames: 'assets/[name].js',
         // 静态资源命名格式
         assetFileNames: 'assets/sub-[name]-[hash].[ext]',
-        // 手动代码分割配置
+        // 使用 manualChunks 配置控制 chunk 名称
         manualChunks: (id) => {
           if (id.includes('PageA/src/index.vue')) {
             return 'page-a'

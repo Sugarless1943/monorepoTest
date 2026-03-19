@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "build:pageA": "vite build --config vite.config.pageA.js",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "run:dist": "serve dist - s"
   },
   "dependencies": {
     "@monorepo/components": "workspace:*",
