@@ -15,6 +15,10 @@ export default defineConfig({
         assetFileNames: 'assets/sub-[name]-[hash].[ext]',
         // 使用 manualChunks 配置控制 chunk 名称
         manualChunks: (id) => {
+          // 将 node_modules 中的依赖打包到 vendor chunk
+          if (id.includes('node_modules')) {
+            return 'vendor'
+          }
           if (id.includes('PageA/src/index.vue')) {
             return 'page-a'
           }
