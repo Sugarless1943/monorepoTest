@@ -1,5 +1,5 @@
 <template>
-  <div>page A - 已修改2</div>
+  <div>page A - 已修改</div>
   <p>修改时间: {{ currentTime }}</p>
 </template>
 

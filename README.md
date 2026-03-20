@@ -1,22 +1,15 @@
 ```
-    touch pnpm-workspace.yaml
+    一个monorepo的例子
+    apps里
+    其中Sub是整个项目的基座
+    pageA和pageB是两个子包
+    当项目第一次上线时可以打包Sub，相当于全局打包
+    以后有单独页面可以单独打包，不依赖Sub，并且替换Sub中的dist/assets目录
+    这样可以实现页面的独立部署，也可以实现全局的资源管理
 
-    pnpm --workspace-root init
+    未来如果想改造成微前端，项目也已经切分好了，调整下目录，加上单独的git
 
-    pnpm -c // 可以指定到某一个子包内执行script命令
-
-    pnpm -Dw add typescript @types/node // dw --save-dev --workspace-root
-
-    prettier | .prettierignore | lint:prettier // 格式化代码
-    eslint | .eslintignore | lint:eslint // 检查代码质量
-
-
-    git
-    commitizen
-    pnpm -Dw add @commitlint/cli @commitlint/config-conventional commitizen cz-git
-
-
-    // 添加全局的，给workspace内的所有子包都安装prettier 需要-w
-    pnpm add --save-dev --save-exact -w prettier
-
+    packages中
+    有一个common包
+    有一个utils包，将来可以单独发布使用
 ```
