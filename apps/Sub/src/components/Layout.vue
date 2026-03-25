@@ -9,6 +9,9 @@ const menus = [
   { path: '/', name: 'Home', label: '首页' },
   { path: '/pageA', name: 'PageA', label: '页面A' },
   { path: '/pageB', name: 'PageB', label: '页面B' },
+  { path: '/pageC', name: 'PageC', label: '页面C' },
+  { path: '/pageD', name: 'PageD', label: '页面D' },
+  { path: '/pageE', name: 'PageE', label: '页面E' },
 ]
 </script>
 
