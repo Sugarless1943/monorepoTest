@@ -6,11 +6,17 @@
       <h3>从基座接收的全局参数:</h3>
       <div class="param-item">
         <label>当前用户:</label>
-        <span>{{ globalParams?.userInfo?.name }} ({{ globalParams?.userInfo?.role }})</span>
+        <span
+          >{{ globalParams?.userInfo?.name }} ({{
+            globalParams?.userInfo?.role
+          }})</span
+        >
       </div>
       <div class="param-item">
         <label>当前主题:</label>
-        <span :class="['theme-badge', globalParams?.theme]">{{ globalParams?.theme }}</span>
+        <span :class="['theme-badge', globalParams?.theme]">{{
+          globalParams?.theme
+        }}</span>
       </div>
       <div class="param-item">
         <label>API地址:</label>
@@ -52,9 +58,10 @@ const toggleTheme = () => {
 // 切换用户
 const changeUser = () => {
   const currentRole = globalParams.value?.userInfo?.role
-  const newUser = currentRole === 'admin'
-    ? { name: 'Guest', role: 'guest' }
-    : { name: 'Admin', role: 'admin' }
+  const newUser =
+    currentRole === 'admin'
+      ? { name: 'Guest', role: 'guest' }
+      : { name: 'Admin', role: 'admin' }
   updateGlobalParams({ userInfo: newUser })
 }
 
@@ -70,7 +77,8 @@ const updateVersion = () => {
   padding: 20px;
 }
 
-.params-section, .actions-section {
+.params-section,
+.actions-section {
   margin-bottom: 24px;
   padding: 16px;
   background-color: #f5f5f5;
