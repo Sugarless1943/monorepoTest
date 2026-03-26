@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, provide, readonly } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
@@ -13,6 +13,29 @@ const menus = [
   { path: '/pageD', name: 'PageD', label: '页面D' },
   { path: '/pageE', name: 'PageE', label: '页面E' },
 ]
+
+// 基座全局参数
+const globalParams = ref({
+  userInfo: { name: 'Admin', role: 'admin' },
+  theme: 'light',
+  apiBaseUrl: 'https://api.example.com',
+  version: '1.0.0',
+})
+
+// 提供只读的全局参数
+provide('globalParams', readonly(globalParams))
+
+// 提供更新参数的方法
+const updateGlobalParams = (newParams) => {
+  globalParams.value = { ...globalParams.value, ...newParams }
+}
+provide('updateGlobalParams', updateGlobalParams)
+
+// 提供设置单个属性的方法
+const setGlobalParam = (key, value) => {
+  globalParams.value[key] = value
+}
+provide('setGlobalParam', setGlobalParam)
 </script>
 
 <template>
