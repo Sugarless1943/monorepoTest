@@ -1,1 +1,1 @@
-export { default as PageD } from './index.vue'
+export { default } from './index.vue'

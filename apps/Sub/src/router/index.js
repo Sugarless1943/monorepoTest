@@ -2,6 +2,10 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '../components/Layout.vue'
 import Home from '../views/Home.vue'
 
+function loadProdPage(jsPath) {
+  return import(/* @vite-ignore */ jsPath).then((mod) => mod.default)
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -17,42 +21,52 @@ const router = createRouter({
         {
           path: 'pageA',
           name: 'PageA',
-          component: () =>
-            import(
-              /* webpackChunkName: "page-a" */ '../../../PageA/src/index.vue'
-            ),
+          component: import.meta.env.DEV
+            ? () =>
+                import(
+                  /* webpackChunkName: "page-a" */ '../../../PageA/src/index.vue'
+                )
+            : () => loadProdPage('/assets/page-a.js'),
         },
         {
           path: 'pageB',
           name: 'PageB',
-          component: () =>
-            import(
-              /* webpackChunkName: "page-b" */ '../../../PageB/src/index.vue'
-            ),
+          component: import.meta.env.DEV
+            ? () =>
+                import(
+                  /* webpackChunkName: "page-b" */ '../../../PageB/src/index.vue'
+                )
+            : () => loadProdPage('/assets/page-b.js'),
         },
         {
           path: 'pageC',
           name: 'PageC',
-          component: () =>
-            import(
-              /* webpackChunkName: "page-c" */ '../../../PageC/src/index.vue'
-            ),
+          component: import.meta.env.DEV
+            ? () =>
+                import(
+                  /* webpackChunkName: "page-c" */ '../../../PageC/src/index.vue'
+                )
+            : () => loadProdPage('/assets/page-c.js'),
         },
         {
           path: 'pageD',
           name: 'PageD',
-          component: () =>
-            import(
-              /* webpackChunkName: "page-d" */ '../../../PageD/src/index.vue'
-            ),
+          component: import.meta.env.DEV
+            ? () =>
+                import(
+                  /* webpackChunkName: "page-d" */ '../../../PageD/src/index.vue'
+                )
+            : () => loadProdPage('/assets/page-d.js'),
         },
         {
           path: 'pageE',
           name: 'PageE',
-          component: () =>
-            import(
-              /* webpackChunkName: "page-e" */ '../../../PageE/src/index.vue'
-            ),
+          component: import.meta.env.DEV
+            ? () =>
+                import(
+                  /* webpackChunkName: "page-e" */ '../../../PageE/src/index.vue'
+                )
+            : () => loadProdPage('/assets/page-e.js'),
         },
       ],
     },

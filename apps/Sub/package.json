@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "build:pageA": "vite build --config vite.config.pageA.js",
+    "build": "node ./scripts/build.js",
+    "build:host": "pnpm exec vite build",
+    "check:dist": "node ./scripts/check-dist.js",
     "preview": "vite preview",
     "run:dist": "serve dist - s"
   },
