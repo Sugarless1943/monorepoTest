@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "node ./scripts/build.js",
     "build:host": "pnpm exec vite build",
+    "build:pageA": "cd ../PageA && pnpm build",
     "check:dist": "node ./scripts/check-dist.js",
     "preview": "vite preview",
     "run:dist": "serve dist - s"
@@ -16,6 +17,7 @@
     "@monorepo/page-a": "workspace:*",
     "@monorepo/page-b": "workspace:*",
     "@monorepo/utils": "workspace:*",
+    "element-plus": "^2.13.6",
     "vue": "^3.5.25",
     "vue-router": "^5.0.3"
   },

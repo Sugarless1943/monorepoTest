@@ -1,6 +1,6 @@
 <template>
   <div class="page-a">
-    <h2>Page A Updated 666</h2>
+    <h2>Page A Updated</h2>
 
     <div class="params-section">
       <h3>从基座接收的全局参数:</h3>

@@ -4,7 +4,7 @@ import path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/",
+  base: '/',
   plugins: [vue()],
   build: {
     // 保留已有 page chunk，便于仅重打指定子应用时复用其他产物

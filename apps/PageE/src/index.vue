@@ -1,14 +1,6 @@
 <template>
   <div>page E</div>
-  <p>
-    当前用户: {{ globalParams?.userInfo?.name }} ({{
-      globalParams?.userInfo?.role
-    }})
-  </p>
+  <el-button type="primary">Element Plus Button</el-button>
 </template>
 
-<script setup>
-import { ref, inject } from 'vue'
-
-const globalParams = inject('globalParams', ref({}))
-</script>
+<script setup></script>
