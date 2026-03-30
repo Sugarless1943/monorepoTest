@@ -7,7 +7,10 @@ export function subPageBuildPlugin({ chunkFileName, outDir }) {
     name: `sub-page-build-${chunkFileName}`,
     async writeBundle() {
       const jsPath = path.resolve(outDir, chunkFileName)
-      const cssPath = path.resolve(outDir, chunkFileName.replace(/\.js$/, '.css'))
+      const cssPath = path.resolve(
+        outDir,
+        chunkFileName.replace(/\.js$/, '.css')
+      )
 
       let jsSource = await readFile(jsPath, 'utf8')
 

@@ -1,1 +1,4 @@
-pnpm exec prettier . --write
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+pnpm exec lint-staged

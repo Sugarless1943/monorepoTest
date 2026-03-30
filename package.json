@@ -29,8 +29,8 @@
     "vite": "^7.3.1"
   },
   "lint-staged": {
-    "**/*.{js,ts,vue,json,css}": [
-      "git-format-staged --formatter 'prettier --write {}' ."
+    "**/*.{js,ts,vue,json,css,scss,md}": [
+      "prettier --write"
     ]
   }
 }
