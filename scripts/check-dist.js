@@ -1,9 +1,10 @@
 import { access, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import { listPageAssetFileNames, resolveBuildPlan } from '../product/index.js'
-import { parseProductArgs } from './productArgs.js'
+import { parseProductArgs } from './lib/args.js'
 
-const subDir = path.resolve(import.meta.dirname, '..')
+const repoDir = path.resolve(import.meta.dirname, '..')
+const subDir = path.resolve(repoDir, 'apps/Sub')
 const distDir = path.resolve(subDir, 'dist')
 const assetsDir = path.resolve(distDir, 'assets')
 const { profileId, selectors } = parseProductArgs(process.argv.slice(2))

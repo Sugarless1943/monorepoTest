@@ -2,7 +2,7 @@ import { readdir, rm } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { listPageAssetFileNames, resolveBuildPlan } from '../product/index.js'
-import { parseProductArgs } from './productArgs.js'
+import { parseProductArgs } from './lib/args.js'
 
 function run(command, args, cwd, env = {}) {
   return new Promise((resolve, reject) => {
@@ -24,8 +24,8 @@ function run(command, args, cwd, env = {}) {
   })
 }
 
-const subDir = path.resolve(import.meta.dirname, '..')
-const repoDir = path.resolve(subDir, '../..')
+const repoDir = path.resolve(import.meta.dirname, '..')
+const subDir = path.resolve(repoDir, 'apps/Sub')
 const assetsDir = path.resolve(subDir, 'dist/assets')
 const { profileId, selectors } = parseProductArgs(process.argv.slice(2))
 const { profile, pages: targetPages } = resolveBuildPlan({
@@ -63,5 +63,5 @@ await run(
     profile.id,
     ...targetPages.map((page) => page.slug),
   ],
-  subDir
+  repoDir
 )

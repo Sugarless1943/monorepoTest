@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "cd apps/Sub && pnpm dev",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:sub": "cd apps/Sub && pnpm build",
-    "export": "node ./apps/Sub/scripts/export.js",
+    "export": "node ./scripts/export.js",
     "prepare": "husky"
   },
   "keywords": [],
