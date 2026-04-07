@@ -9,6 +9,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:sub": "cd apps/Sub && pnpm build",
     "export": "node ./scripts/export.js",
+    "verify": "node ./internal/verify/repo.js",
+    "verify:fast": "node ./internal/verify/repo.js --fast",
+    "verify:sub": "node ./scripts/runSubPackageScript.js verify",
     "prepare": "husky"
   },
   "keywords": [],

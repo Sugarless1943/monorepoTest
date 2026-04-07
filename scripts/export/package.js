@@ -62,6 +62,8 @@ export async function rewriteRootPackage({ repoDir, exportDir, plan }) {
       'build:sub': 'node ./scripts/runSubPackageScript.js build',
       'build:host': 'node ./scripts/runSubPackageScript.js build:host',
       'check:dist': 'node ./scripts/runSubPackageScript.js check:dist',
+      verify: 'node ./scripts/runSubPackageScript.js verify',
+      'verify:sub': 'node ./scripts/runSubPackageScript.js verify',
       preview: 'node ./scripts/runSubPackageScript.js preview',
       ...Object.fromEntries(
         Object.entries(createPageBuildScripts(plan.pages, 'apps/')).map(
@@ -96,6 +98,7 @@ export async function rewriteSubPackage({
       ...createPageBuildScripts(plan.pages, '../'),
       'build:host': 'pnpm exec vite build',
       'check:dist': 'node ../../scripts/check-dist.js',
+      verify: 'node ../../scripts/verify/sub.js',
       preview: 'vite preview',
     },
     dependencies: filterWorkspaceDependencies(

@@ -115,6 +115,94 @@ pnpm build:pageA
 - page selector 目前兼容 `page-a`、`pageA`、`PageA` 等写法，但后续统一以 `page-a` 这类 `slug` 为准。
 - 当前构建产物仍然输出到 `apps/Sub/dist`，后续如果进入正式交付链路，再独立到 `outputs/build/*`。
 
+## Verify 命令
+
+仓库里现在有两层 `verify`，分别负责不同边界的问题。
+
+### 1. 根目录 `verify`
+
+在仓库根目录执行：
+
+```bash
+pnpm verify
+```
+
+它验证的是“主仓整条链路是否还通”，包括：
+
+1. 跑一次 `Sub verify`
+2. 执行一次 `export`
+3. 把导出工程放到 `.tmp/verify/exports/*`
+4. 在导出工程里执行 `pnpm install`
+5. 再跑一次导出工程自己的 `pnpm verify`
+
+这个命令适合在改了下面这些内容之后执行：
+
+- `product/*`
+- `scripts/*`
+- `tooling/vite/*`
+- 各个 `apps/Page*/vite.config.js`
+- `package.json`
+- `apps/Sub/package.json`
+
+常用变体：
+
+```bash
+# 只验证一个 profile
+pnpm verify -- --profile customer-a
+
+# 快速模式，目前默认只跑 default
+pnpm verify:fast
+```
+
+### 2. 根目录 `verify:sub`
+
+在仓库根目录执行：
+
+```bash
+pnpm verify:sub -- --profile customer-a
+```
+
+它只验证当前主仓里的 `Sub` 交付链路，不做 `export`。覆盖内容包括：
+
+1. build
+2. check-dist
+3. preview 启动
+4. 首页、一个 page 路由、一个 legacy route 的 smoke check
+
+这个命令适合在你只想确认“当前 host + page 构建和预览是否正常”时执行。
+
+### 3. `apps/Sub` 里的 `verify`
+
+在 `apps/Sub` 目录执行：
+
+```bash
+pnpm verify
+```
+
+它和根目录的 `pnpm verify:sub` 是同一层语义，只是入口位置不同。适合已经进入 `apps/Sub` 目录时直接使用。
+
+如果当前是在主仓里，确实想验证某个特定 profile，也可以显式传参：
+
+```bash
+pnpm verify -- --profile customer-a
+```
+
+### 4. 导出工程里的 `verify`
+
+导出后的项目根目录也会带上：
+
+```bash
+pnpm verify
+```
+
+但这里的语义和主仓根目录不同。导出工程里的 `verify` 只验证当前交付工程自身是否还能：
+
+- build
+- check-dist
+- preview
+
+它不会再做二次 `export`，因为导出工程本身已经不是主仓了。通常也不需要再传 `--profile`，因为导出工程默认只保留当前交付包自己的 `default` profile。
+
 ## 页面接入约定
 
 当前每个 page 都是一个独立 app 目录，最小结构类似下面这样：

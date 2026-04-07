@@ -11,8 +11,19 @@ export async function syncSubDist(repoDir = resolveRepoDir()) {
   const targetDir = path.resolve(repoDir, 'dist')
 
   await access(sourceDir)
-  await rm(targetDir, { recursive: true, force: true })
-  await cp(sourceDir, targetDir, { recursive: true })
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await rm(targetDir, { recursive: true, force: true })
+
+    try {
+      await cp(sourceDir, targetDir, { recursive: true })
+      return
+    } catch (error) {
+      if (error?.code !== 'EEXIST' || attempt === 1) {
+        throw error
+      }
+    }
+  }
 }
 
 if (

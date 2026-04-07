@@ -10,6 +10,7 @@
     "build:host": "pnpm exec vite build",
     "build:pageA": "cd ../PageA && pnpm build",
     "check:dist": "node ../../scripts/check-dist.js",
+    "verify": "node ../../scripts/verify/sub.js",
     "preview": "vite preview",
     "run:dist": "serve dist - s"
   },

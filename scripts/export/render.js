@@ -252,6 +252,20 @@ serve dist -s
 
 ${incrementalExamples}
 
+## 验证命令
+
+\`\`\`bash
+pnpm verify
+\`\`\`
+
+这个命令只验证当前导出工程自身是否还能正常：
+
+- build
+- check-dist
+- preview
+
+它不会再执行二次 \`export\`。通常也不需要再传 \`--profile\`，因为导出工程默认只保留当前交付包自己的 \`default\` profile。
+
 这个导出工程默认只保留一个 \`default\` profile，不需要再传 \`VITE_PRODUCT_PROFILE\`。
 `
 }
