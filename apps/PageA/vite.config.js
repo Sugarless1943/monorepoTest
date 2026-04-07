@@ -1,7 +1,10 @@
+import { getPage } from '../Sub/product/index.js'
 import { createSubPageViteConfig } from '../Sub/scripts/createSubPageViteConfig.js'
+
+const page = getPage('page-a')
 
 export default createSubPageViteConfig({
   appDir: __dirname,
-  chunkFileName: 'page-a.js',
-  libName: 'PageA',
+  chunkFileName: page.chunkFileName,
+  libName: page.libName,
 })

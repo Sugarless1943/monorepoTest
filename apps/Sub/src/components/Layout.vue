@@ -1,18 +1,11 @@
 <script setup>
 import { ref, provide, readonly } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
+import { productMenus, productProfile } from '../runtime/productProfile.js'
 
 const route = useRoute()
-const router = useRouter()
-
-const menus = [
-  { path: '/', name: 'Home', label: '首页' },
-  { path: '/pageA', name: 'PageA', label: '页面A' },
-  { path: '/pageB', name: 'PageB', label: '页面B' },
-  { path: '/pageC', name: 'PageC', label: '页面C' },
-  { path: '/pageD', name: 'PageD', label: '页面D' },
-  { path: '/pageE', name: 'PageE', label: '页面E' },
-]
+const menuTitle = productProfile.runtimeConfig.brandName ?? '菜单'
+const menus = [{ path: '/', routeName: 'Home', label: '首页' }, ...productMenus]
 
 // 基座全局参数
 const globalParams = ref({
@@ -20,6 +13,8 @@ const globalParams = ref({
   theme: 'light',
   apiBaseUrl: 'https://api.example.com',
   version: '1.0.0',
+  profileId: productProfile.id,
+  brandName: productProfile.runtimeConfig.brandName,
 })
 
 // 提供只读的全局参数
@@ -42,7 +37,7 @@ provide('setGlobalParam', setGlobalParam)
   <div class="layout">
     <!-- 左侧菜单 -->
     <aside class="menu">
-      <h2>菜单</h2>
+      <h2>{{ menuTitle }}</h2>
       <ul>
         <li v-for="menu in menus" :key="menu.path">
           <router-link

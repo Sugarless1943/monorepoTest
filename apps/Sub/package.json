@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node ./scripts/build.js",
+    "export": "node ./scripts/export.js",
     "build:host": "pnpm exec vite build",
     "build:pageA": "cd ../PageA && pnpm build",
     "check:dist": "node ./scripts/check-dist.js",

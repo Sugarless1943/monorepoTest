@@ -1,19 +1,14 @@
 import { readdir, rm } from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import path from 'node:path'
+import { listPageAssetFileNames, resolveBuildPlan } from '../product/index.js'
+import { parseProductArgs } from './productArgs.js'
 
-const pageMap = {
-  pagea: '../PageA',
-  pageb: '../PageB',
-  pagec: '../PageC',
-  paged: '../PageD',
-  pagee: '../PageE',
-}
-
-function run(command, args, cwd) {
+function run(command, args, cwd, env = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       cwd,
+      env: { ...process.env, ...env },
       stdio: 'inherit',
       shell: true,
     })
@@ -30,36 +25,43 @@ function run(command, args, cwd) {
 }
 
 const subDir = path.resolve(import.meta.dirname, '..')
+const repoDir = path.resolve(subDir, '../..')
 const assetsDir = path.resolve(subDir, 'dist/assets')
-const requestedPages = process.argv
-  .slice(2)
-  .filter((arg) => arg !== '--')
-  .map((arg) => arg.toLowerCase())
-  .filter(Boolean)
-
-const targetPages =
-  requestedPages.length === 0 ? Object.keys(pageMap) : requestedPages
-
-for (const page of targetPages) {
-  if (!pageMap[page]) {
-    console.error(`Unknown page: ${page}`)
-    process.exit(1)
-  }
-}
+const { profileId, selectors } = parseProductArgs(process.argv.slice(2))
+const { profile, pages: targetPages } = resolveBuildPlan({
+  profileId,
+  selectors,
+})
+const knownPageAssetFiles = new Set(listPageAssetFileNames())
 
 try {
   const files = await readdir(assetsDir)
   await Promise.all(
     files
-      .filter((file) => /^index\d+\.(js|css)$/.test(file))
+      .filter(
+        (file) =>
+          /^index\d+\.(js|css)$/.test(file) || knownPageAssetFiles.has(file)
+      )
       .map((file) => rm(path.join(assetsDir, file), { force: true }))
   )
 } catch {}
 
-await run('pnpm', ['exec', 'vite', 'build'], subDir)
+await run('pnpm', ['exec', 'vite', 'build'], subDir, {
+  VITE_PRODUCT_PROFILE: profile.id,
+  VITE_PRODUCT_PAGE_SLUGS: targetPages.map((page) => page.slug).join(','),
+})
 
 for (const page of targetPages) {
-  await run('pnpm', ['build'], path.resolve(subDir, pageMap[page]))
+  await run('pnpm', ['build'], path.resolve(repoDir, page.appDir))
 }
 
-await run('node', ['./scripts/check-dist.js', ...targetPages], subDir)
+await run(
+  'node',
+  [
+    './scripts/check-dist.js',
+    '--profile',
+    profile.id,
+    ...targetPages.map((page) => page.slug),
+  ],
+  subDir
+)
