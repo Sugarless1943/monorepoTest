@@ -16,4 +16,4 @@ export const ROOT_DEV_DEPENDENCIES = [
   'vite',
 ]
 
-export const ROOT_SUPPORT_DIRS = ['product', 'scripts', 'tooling']
+export const ROOT_SUPPORT_DIRS = ['scripts']

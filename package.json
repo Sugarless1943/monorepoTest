@@ -5,15 +5,16 @@
   "main": "index.js",
   "type": "module",
   "imports": {
-    "#product": "./product/index.js",
-    "#product/*": "./product/*",
+    "#product": "./apps/Sub/product/index.js",
+    "#product/*": "./apps/Sub/product/*",
     "#scripts/*": "./scripts/*",
-    "#tooling/*": "./tooling/*"
+    "#tooling/*": "./apps/Sub/tooling/*"
   },
   "scripts": {
     "start": "cd apps/Sub && pnpm dev",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build:sub": "cd apps/Sub && pnpm build",
+    "create:page": "node ./scripts/runSubPackageScript.js create:page",
     "export": "node ./scripts/export.js",
     "verify": "node ./internal/repoVerify.js",
     "verify:fast": "node ./internal/repoVerify.js --fast",

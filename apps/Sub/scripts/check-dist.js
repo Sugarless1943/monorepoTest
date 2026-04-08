@@ -3,8 +3,7 @@ import path from 'node:path'
 import { listPageAssetFileNames, resolveBuildPlan } from '#product'
 import { parseProductArgs } from './lib/args.js'
 
-const repoDir = path.resolve(import.meta.dirname, '..')
-const subDir = path.resolve(repoDir, 'apps/Sub')
+const subDir = path.resolve(import.meta.dirname, '..')
 const distDir = path.resolve(subDir, 'dist')
 const assetsDir = path.resolve(distDir, 'assets')
 const { profileId, selectors } = parseProductArgs(process.argv.slice(2))

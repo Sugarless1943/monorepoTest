@@ -24,8 +24,8 @@ function run(command, args, cwd, env = {}) {
   })
 }
 
-const repoDir = path.resolve(import.meta.dirname, '..')
-const subDir = path.resolve(repoDir, 'apps/Sub')
+const subDir = path.resolve(import.meta.dirname, '..')
+const repoDir = path.resolve(subDir, '../..')
 const assetsDir = path.resolve(subDir, 'dist/assets')
 const { profileId, selectors } = parseProductArgs(process.argv.slice(2))
 const { profile, pages: targetPages } = resolveBuildPlan({
@@ -63,5 +63,5 @@ await run(
     profile.id,
     ...targetPages.map((page) => page.slug),
   ],
-  repoDir
+  subDir
 )

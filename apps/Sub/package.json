@@ -4,16 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "imports": {
-    "#product": "./.imports/product.js"
+    "#product": "./product/index.js"
   },
   "scripts": {
     "dev": "vite",
-    "build": "node ../../scripts/build.js",
-    "export": "node ../../scripts/export.js",
+    "build": "node ./scripts/build.js",
     "build:host": "pnpm exec vite build",
     "build:pageA": "cd ../PageA && pnpm build",
-    "check:dist": "node ../../scripts/check-dist.js",
-    "verify": "node ../../scripts/verify/sub.js",
+    "create:page": "node ./scripts/createPage.js",
+    "check:dist": "node ./scripts/check-dist.js",
+    "verify": "node ./scripts/verify.js",
     "preview": "vite preview",
     "run:dist": "serve dist -s"
   },

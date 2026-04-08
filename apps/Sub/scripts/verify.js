@@ -3,8 +3,7 @@ import http from 'node:http'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { resolveBuildPlan } from '#product'
-import { parseProductArgs } from '../lib/args.js'
-import { syncSubDist } from '../syncSubDist.js'
+import { parseProductArgs } from './lib/args.js'
 
 function run(command, args, cwd, env = {}) {
   return new Promise((resolve, reject) => {
@@ -160,8 +159,7 @@ async function verifyPreview({ subDir, profile, targetPages }) {
 }
 
 export async function verifySub(rawArgs = process.argv.slice(2)) {
-  const repoDir = path.resolve(import.meta.dirname, '../..')
-  const subDir = path.resolve(repoDir, 'apps/Sub')
+  const subDir = path.resolve(import.meta.dirname, '..')
   const { profileId, selectors } = parseProductArgs(rawArgs)
   const { profile, pages: targetPages } = resolveBuildPlan({
     profileId,
@@ -182,7 +180,7 @@ export async function verifySub(rawArgs = process.argv.slice(2)) {
       profile.id,
       ...targetPages.map((page) => page.slug),
     ],
-    repoDir
+    subDir
   )
 
   await run(
@@ -193,10 +191,9 @@ export async function verifySub(rawArgs = process.argv.slice(2)) {
       profile.id,
       ...targetPages.map((page) => page.slug),
     ],
-    repoDir
+    subDir
   )
 
-  await syncSubDist(repoDir)
   await verifyPreview({ subDir, profile, targetPages })
 
   console.log(`Sub verify passed for profile ${profile.id}`)

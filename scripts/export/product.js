@@ -8,7 +8,7 @@ import {
 
 export async function rewriteProductFiles({ exportDir, plan }) {
   const pageSlugs = plan.profile.pageSlugs
-  const productDir = path.resolve(exportDir, 'product')
+  const productDir = path.resolve(exportDir, 'apps/Sub/product')
   const pagesDir = path.resolve(productDir, 'pages')
   const profilesDir = path.resolve(productDir, 'profiles')
 

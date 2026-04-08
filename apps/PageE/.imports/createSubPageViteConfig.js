@@ -1,1 +1,1 @@
-export * from '../../../tooling/createSubPageViteConfig.js'
+export * from '../../Sub/tooling/createSubPageViteConfig.js'
