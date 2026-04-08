@@ -1,6 +1,6 @@
 import { access, readdir } from 'node:fs/promises'
 import path from 'node:path'
-import { listPageAssetFileNames, resolveBuildPlan } from '../product/index.js'
+import { listPageAssetFileNames, resolveBuildPlan } from '#product'
 import { parseProductArgs } from './lib/args.js'
 
 const repoDir = path.resolve(import.meta.dirname, '..')

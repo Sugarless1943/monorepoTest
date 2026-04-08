@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import http from 'node:http'
 import { createServer } from 'node:net'
 import path from 'node:path'
-import { resolveBuildPlan } from '../../product/index.js'
+import { resolveBuildPlan } from '#product'
 import { parseProductArgs } from '../lib/args.js'
 import { syncSubDist } from '../syncSubDist.js'
 
@@ -108,6 +108,23 @@ async function assertPageResponse(url) {
   }
 }
 
+function collectPreviewPaths({ profile, targetPages }) {
+  const paths = ['/']
+  const selectedPageSlugs = new Set(targetPages.map((page) => page.slug))
+
+  for (const page of targetPages) {
+    paths.push(page.routePath)
+  }
+
+  for (const legacyRoute of profile.legacyRoutes) {
+    if (selectedPageSlugs.has(legacyRoute.slug)) {
+      paths.push(legacyRoute.path)
+    }
+  }
+
+  return [...new Set(paths)]
+}
+
 async function verifyPreview({ subDir, profile, targetPages }) {
   const port = await getAvailablePort()
   const baseUrl = `http://127.0.0.1:${port}`
@@ -127,18 +144,8 @@ async function verifyPreview({ subDir, profile, targetPages }) {
   )
 
   try {
-    await assertPageResponse(`${baseUrl}/`)
-
-    const primaryPage = targetPages[0] ?? profile.pages[0]
-
-    if (primaryPage) {
-      await assertPageResponse(`${baseUrl}${primaryPage.routePath}`)
-    }
-
-    const legacyRoute = profile.legacyRoutes[0]
-
-    if (legacyRoute) {
-      await assertPageResponse(`${baseUrl}${legacyRoute.path}`)
+    for (const routePath of collectPreviewPaths({ profile, targetPages })) {
+      await assertPageResponse(`${baseUrl}${routePath}`)
     }
   } finally {
     previewProcess.kill('SIGTERM')

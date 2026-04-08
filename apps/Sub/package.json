@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "imports": {
+    "#product": "./.imports/product.js"
+  },
   "scripts": {
     "dev": "vite",
     "build": "node ../../scripts/build.js",
@@ -12,7 +15,7 @@
     "check:dist": "node ../../scripts/check-dist.js",
     "verify": "node ../../scripts/verify/sub.js",
     "preview": "vite preview",
-    "run:dist": "serve dist - s"
+    "run:dist": "serve dist -s"
   },
   "dependencies": {
     "@monorepo/components": "workspace:*",

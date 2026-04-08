@@ -1,6 +1,6 @@
 import { mkdir, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { resolveExportPlan } from '../../product/index.js'
+import { resolveExportPlan } from '#product'
 import { pathExists } from '../lib/fs.js'
 import { parseExportArgs } from './args.js'
 import { ROOT_FILES_TO_COPY, ROOT_SUPPORT_DIRS } from './constants.js'

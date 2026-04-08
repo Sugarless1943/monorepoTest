@@ -3,7 +3,6 @@ export const ROOT_FILES_TO_COPY = [
   '.npmrc',
   '.prettierignore',
   '.prettierrc',
-  'pnpm-lock.yaml',
   'pnpm-workspace.yaml',
   'tsconfig.json',
   'tsconfig.node.json',

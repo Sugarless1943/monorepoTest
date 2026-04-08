@@ -235,6 +235,8 @@ pnpm install
 pnpm dev
 \`\`\`
 
+首次安装会为这个导出工程生成自己的 \`pnpm-lock.yaml\`，不再复用主仓的 lockfile。
+
 构建产物默认会同步到根目录 \`dist/\`，方便在交付工程根目录直接预览。
 
 \`\`\`bash

@@ -1,4 +1,4 @@
-import { resolveActiveProfile } from '../../../../product/index.js'
+import { resolveActiveProfile } from '#product'
 
 function parseSelectedPageSlugs(rawValue) {
   if (!rawValue) {

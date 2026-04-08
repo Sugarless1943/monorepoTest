@@ -139,7 +139,7 @@ pnpm verify
 
 - `product/*`
 - `scripts/*`
-- `tooling/vite/*`
+- `tooling/*`
 - 各个 `apps/Page*/vite.config.js`
 - `package.json`
 - `apps/Sub/package.json`
@@ -167,7 +167,7 @@ pnpm verify:sub -- --profile customer-a
 1. build
 2. check-dist
 3. preview 启动
-4. 首页、一个 page 路由、一个 legacy route 的 smoke check
+4. 首页、当前 profile 下全部 page 路由和 legacy route 的 smoke check
 
 这个命令适合在你只想确认“当前 host + page 构建和预览是否正常”时执行。
 
@@ -304,9 +304,16 @@ resolver 负责把页面注册表和客户 profile 解析成：
 - `apps/Sub/src` 是 host 运行时代码
 - `product` 是页面和客户配置的真源
 - `scripts` 是围绕真源做 build、check、export 的仓库级脚本
-- `tooling/vite` 是给各 page 复用的构建辅助模块
+- `tooling` 是给各 page 复用的构建辅助模块
 
-维护 build/export 相关问题时，推荐先看 `product`，再看 `scripts`，最后看 `tooling/vite`。因为脚本本质上是在消费 `product` 里的页面注册表和 profile 配置。
+维护 build/export 相关问题时，推荐先看 `product`，再看 `scripts`，最后看 `tooling`。因为脚本本质上是在消费 `product` 里的页面注册表和 profile 配置。
+
+跨目录 import 现在优先使用仓库级别名：
+
+- `#product`
+- `#tooling/*`
+
+根目录脚本直接通过根 `package.json#imports` 解析；`apps/Sub` 和各 page 包则通过各自包内的 `.imports/*` 轻量转发，避免反复写很多层 `../../`。
 
 ### `scripts` 关键文件
 
@@ -318,9 +325,9 @@ resolver 负责把页面注册表和客户 profile 解析成：
   导出入口。按 profile 裁剪一个可独立交付的源码包，里面会做文件复制、workspace 依赖收集、`package.json` 改写、`product` 配置裁剪，以及 README 和 manifest 生成。
 - `scripts/lib/args.js`
   build/check 共用的参数解析工具，主要处理 `--profile` 和页面选择器。
-- `tooling/vite/createSubPageViteConfig.js`
+- `tooling/createSubPageViteConfig.js`
   page 子应用构建配置工厂。统一输出目录、chunk 文件名和 `vue` external 的构建约定。
-- `tooling/vite/subPageBuildPlugin.js`
+- `tooling/subPageBuildPlugin.js`
   page 构建后的补充处理插件。负责把 page CSS 内联回对应 JS，并做一次 esbuild 压缩，保证 host 侧按约定加载。
 
 当前脚本里最重的文件是 `scripts/export.js`。如果后续要做重构，通常从这里开始最有收益。
@@ -346,7 +353,7 @@ resolver 负责把页面注册表和客户 profile 解析成：
 - `product/resolver.js`
   `product` 的核心编排层。负责 profile 继承合并、页面排序、唯一性校验，以及生成 build/export 所需 plan。
 
-可以把 `product` 理解成“规则真源”，把 `scripts` 理解成“基于真源执行动作”，把 `tooling/vite` 理解成“给 page 复用的构建工具层”。
+可以把 `product` 理解成“规则真源”，把 `scripts` 理解成“基于真源执行动作”，把 `tooling` 理解成“给 page 复用的构建工具层”。
 
 ### 推荐阅读顺序
 

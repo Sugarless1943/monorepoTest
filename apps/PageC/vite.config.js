@@ -1,5 +1,5 @@
-import { getPage } from '../../product/index.js'
-import { createSubPageViteConfig } from '../../tooling/vite/createSubPageViteConfig.js'
+import { getPage } from '#product'
+import { createSubPageViteConfig } from '#tooling/createSubPageViteConfig.js'
 
 const page = getPage('page-c')
 

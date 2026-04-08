@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import path from 'node:path'
-import { getAllProfiles, resolveProfile } from '../../product/index.js'
+import { getAllProfiles, resolveProfile } from '#product'
 
 function run(command, args, cwd) {
   return new Promise((resolve, reject) => {
@@ -72,7 +72,7 @@ function getTargetProfiles(options) {
 
 export async function verifyRepo(rawArgs = process.argv.slice(2)) {
   const options = parseArgs(rawArgs)
-  const repoDir = path.resolve(import.meta.dirname, '../..')
+  const repoDir = path.resolve(import.meta.dirname, '..')
   const tempRootDir = path.resolve(repoDir, '.tmp/verify/exports')
   const targetProfiles = getTargetProfiles(options)
 
@@ -102,7 +102,7 @@ export async function verifyRepo(rawArgs = process.argv.slice(2)) {
       repoDir
     )
 
-    await run('pnpm', ['install', '--no-frozen-lockfile'], exportDir)
+    await run('pnpm', ['install'], exportDir)
     await run('pnpm', ['run', 'verify'], exportDir)
   }
 

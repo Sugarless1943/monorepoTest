@@ -55,6 +55,7 @@ export async function rewriteRootPackage({ repoDir, exportDir, plan }) {
     type: sourcePackage.type,
     packageManager: sourcePackage.packageManager,
     engines: sourcePackage.engines,
+    imports: sourcePackage.imports,
     scripts: {
       start: 'node ./scripts/runSubPackageScript.js dev',
       dev: 'node ./scripts/runSubPackageScript.js dev',
