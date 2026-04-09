@@ -13,6 +13,7 @@
   "scripts": {
     "start": "cd apps/Sub && pnpm dev",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node ./scripts/build.js",
     "build:sub": "cd apps/Sub && pnpm build",
     "create:page": "node ./scripts/runSubPackageScript.js create:page",
     "export": "node ./scripts/export.js",

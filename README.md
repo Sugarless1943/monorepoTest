@@ -64,6 +64,29 @@
 
 ## 当前构建方式
 
+如果要在仓库根目录直接生成某个客户可部署的交付包，可以执行：
+
+```bash
+pnpm build customer-a
+```
+
+默认输出到：
+
+```txt
+dists/
+  customer-a/
+```
+
+如果需要自定义输出目录，也可以追加：
+
+```bash
+pnpm build customer-a --output-dir dists/customer-a-portal
+```
+
+这个根级 `build` 会按 profile 调用 `apps/Sub` 的现有构建链路，然后把本次产物整理到独立目录，适合直接交付部署。
+
+如果是在日常开发里直接调试 `Sub` 的构建细节，仍然可以在 `apps/Sub` 下执行这些命令：
+
 首次构建或清空 `apps/Sub/dist` 后，先执行一次全量构建：
 
 ```bash
@@ -116,7 +139,8 @@ pnpm build:pageA
 注意：
 
 - page selector 目前兼容 `page-a`、`pageA`、`PageA` 等写法，但后续统一以 `page-a` 这类 `slug` 为准。
-- 当前构建产物仍然输出到 `apps/Sub/dist`，后续如果进入正式交付链路，再独立到 `outputs/build/*`。
+- `apps/Sub` 直跑构建时，产物仍然落在 `apps/Sub/dist`。
+- 根目录执行 `pnpm build customer-a` 时，会额外整理一份独立交付产物到 `dists/customer-a`。
 
 ## Verify 命令
 
@@ -358,18 +382,20 @@ resolver 负责把页面注册表和客户 profile 解析成：
 
 ### `scripts` 关键文件
 
+- `scripts/build.js`
+  根目录部署产物入口。按 profile 调用 `apps/Sub` 的 build，再把结果复制到 `dists/<profile>`，用于客户现场部署。
 - `scripts/export.js`
   导出入口。按 profile 裁剪一个可独立交付的源码包，里面会做文件复制、workspace 依赖收集、`package.json` 改写、`product` 配置裁剪，以及 README 和 manifest 生成。
 - `scripts/runSubPackageScript.js`
   根目录到 `apps/Sub` 的转发入口。根 `package.json` 和导出工程根目录会通过它调用 `Sub` 自己的 build、create:page、verify 等脚本。
 - `scripts/syncSubDist.js`
-  根目录 `dist/` 同步工具。用于把 `apps/Sub/dist` 同步到仓库根目录，保证交付工程在根目录也能直接预览。
+  根目录 `dist/` 同步工具。主要给 `build:sub` 和导出工程复用，用于把 `apps/Sub/dist` 同步到仓库根目录，保证根目录也能直接预览。
 - `apps/Sub/tooling/createSubPageViteConfig.js`
   page 子应用构建配置工厂。统一输出目录、chunk 文件名和 `vue` external 的构建约定。
 - `apps/Sub/tooling/subPageBuildPlugin.js`
   page 构建后的补充处理插件。负责把 page CSS 内联回对应 JS，并做一次 esbuild 压缩，保证 host 侧按约定加载。
 
-当前根目录 `scripts` 主要负责 export 和根级 wrapper；真正会跟着 Sub 一起交付的 build/check/createPage/verify 能力在 `apps/Sub/scripts`。
+当前根目录 `scripts` 主要负责 build/export 和根级 wrapper；真正会跟着 Sub 一起交付的 build/check/createPage/verify 能力在 `apps/Sub/scripts`。
 
 ### `apps/Sub/scripts` 关键文件
 
@@ -416,7 +442,7 @@ resolver 负责把页面注册表和客户 profile 解析成：
 
 ### 4. Build 和 Export 的边界
 
-后续会把“面向部署”和“面向交付”的动作彻底拆开：
+现在已经把“面向部署”和“面向交付”的动作拆开：
 
 - `build`：面向部署，产出可运行的构建结果，例如 `dist`、制品目录或镜像上下文。
 - `export`：面向源码交付，产出一个裁剪后的独立项目，供客户私有云部署、审计或二次开发。
@@ -429,21 +455,21 @@ resolver 负责把页面注册表和客户 profile 解析成：
 - `export` 依赖 profile 决定“带哪些源码”。
 - 同一个 `profile` 可以同时支持 `build` 和 `export`，但两个动作的输出目录和产物语义必须分开。
 
-建议后续命令语义保持类似下面这样：
+当前命令语义如下：
 
 ```bash
 # 生成客户部署产物
-build customer-a
+pnpm build customer-a
 
 # 导出客户源码项目
-export customer-a
+pnpm export customer-a
 ```
 
-## 后续 Build 方式
+## 当前 Build 方式
 
-后续 `build` 会按客户 profile 生成一份干净的部署产物，而不是继续复用一个长期累积的 `dist` 目录。
+根目录 `build` 会按客户 profile 生成一份干净的部署产物，而不是把不同客户结果长期混在同一个目录里。
 
-目标流程如下：
+当前流程如下：
 
 1. 读取客户 profile。
 2. resolver 解析出本次需要启用的页面和运行配置。
@@ -452,16 +478,15 @@ export customer-a
 5. 只构建 profile 选中的页面。
 6. 校验本次 build 的页面 chunk、host 文件和运行时桥接文件。
 
-建议后续 build 输出逐步调整到类似下面这种独立目录：
+默认 build 输出目录如下：
 
 ```txt
-outputs/
-  build/
+dists/
     customer-a/
     customer-b/
 ```
 
-这样可以避免不同客户 build 结果互相污染，也比当前复用 `apps/Sub/dist` 更适合交付链路。
+其中 `apps/Sub/dist` 仍然是构建过程中的工作目录，而根目录 `dists/<profile>` 才是面向交付的独立部署产物。
 
 ## 当前 Export 命令
 
@@ -676,9 +701,15 @@ VITE_PRODUCT_PROFILE=customer-a pnpm dev
 pnpm build:sub
 ```
 
+按客户 profile 直接生成交付包：
+
+```bash
+pnpm build customer-a
+```
+
 ## 备注
 
 - 当前仓库仍然是 demo，重点在验证架构方向。
 - `registry / profile / resolver` 已经有了第一版代码骨架，并开始驱动路由、菜单和构建流程。
+- `build` 和 `export` 现在都已经有可执行的根级命令，后续重点会放在产物和裁剪策略继续收细。
 - `export` 已经有第一版可执行脚本，后续重点会放在裁剪策略继续收细，而不是再从零设计命令形态。
-- 等这套配置驱动机制落地后，再补 CLI 会更顺，也更不容易返工。
