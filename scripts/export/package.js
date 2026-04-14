@@ -33,6 +33,14 @@ function filterWorkspaceDependencies(
   return result
 }
 
+function rewriteExportImports(imports = {}) {
+  return {
+    ...imports,
+    '#product': './apps/Sub/product/index.js',
+    '#product/*': './apps/Sub/product/*',
+  }
+}
+
 export function createPageBuildScripts(pages, baseRelativeDir) {
   return Object.fromEntries(
     pages.map((page) => {
@@ -55,7 +63,7 @@ export async function rewriteRootPackage({ repoDir, exportDir, plan }) {
     type: sourcePackage.type,
     packageManager: sourcePackage.packageManager,
     engines: sourcePackage.engines,
-    imports: sourcePackage.imports,
+    imports: rewriteExportImports(sourcePackage.imports),
     scripts: {
       start: 'node ./scripts/runSubPackageScript.js dev',
       dev: 'node ./scripts/runSubPackageScript.js dev',

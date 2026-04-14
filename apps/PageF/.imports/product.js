@@ -1,1 +1,1 @@
-export * from '../../Sub/product/index.js'
+export * from '../../../product/index.js'

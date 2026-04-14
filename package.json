@@ -5,8 +5,8 @@
   "main": "index.js",
   "type": "module",
   "imports": {
-    "#product": "./apps/Sub/product/index.js",
-    "#product/*": "./apps/Sub/product/*",
+    "#product": "./product/index.js",
+    "#product/*": "./product/*",
     "#scripts/*": "./scripts/*",
     "#tooling/*": "./apps/Sub/tooling/*"
   },

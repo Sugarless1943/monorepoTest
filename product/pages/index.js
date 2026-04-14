@@ -3,8 +3,9 @@ import pageB from './page-b.js'
 import pageC from './page-c.js'
 import pageD from './page-d.js'
 import pageE from './page-e.js'
+import pageF from './page-f.js'
 
-const pages = [pageA, pageB, pageC, pageD, pageE]
+const pages = [pageA, pageB, pageC, pageD, pageE, pageF]
 
 function normalizeSelector(value) {
   return String(value ?? '')

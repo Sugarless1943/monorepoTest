@@ -16,4 +16,7 @@ export const ROOT_DEV_DEPENDENCIES = [
   'vite',
 ]
 
-export const ROOT_SUPPORT_DIRS = ['scripts']
+export const ROOT_SUPPORT_FILES = [
+  'scripts/runSubPackageScript.js',
+  'scripts/syncSubDist.js',
+]

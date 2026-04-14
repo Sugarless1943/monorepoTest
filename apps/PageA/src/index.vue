@@ -1,6 +1,6 @@
 <template>
   <div class="page-a">
-    <h2>Page A Updated 666</h2>
+    <h2>Page A Updated 123</h2>
 
     <div class="params-section">
       <h3>从基座接收的全局参数:</h3>
@@ -76,6 +76,10 @@ const updateVersion = () => {
 <style scoped>
 .page-a {
   padding: 20px;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .params-section,

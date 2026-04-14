@@ -7,6 +7,25 @@ import { pathExists, writeJson } from './lib/fs.js'
 const subDir = path.resolve(import.meta.dirname, '..')
 const repoDir = path.resolve(subDir, '../..')
 
+function toPosixPath(value) {
+  return value.split(path.sep).join('/')
+}
+
+function toModulePath(fromDir, targetPath) {
+  const relativePath = toPosixPath(path.relative(fromDir, targetPath))
+  return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+}
+
+async function resolveProductDir() {
+  const rootProductDir = path.resolve(repoDir, 'product')
+
+  if (await pathExists(path.resolve(rootProductDir, 'pages'))) {
+    return rootProductDir
+  }
+
+  return path.resolve(subDir, 'product')
+}
+
 function printUsage() {
   console.log(`Usage:
 
@@ -210,10 +229,15 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   const displayTitle = options.title || pascalName
   const order = options.order ?? getNextOrder(existingPages)
   const appDir = path.resolve(repoDir, 'apps', pascalName)
+  const productDir = await resolveProductDir()
   const pageDefinitionPath = path.resolve(
-    subDir,
-    'product/pages',
+    productDir,
+    'pages',
     `${options.slug}.js`
+  )
+  const productImportPath = toModulePath(
+    path.resolve(appDir, '.imports'),
+    path.resolve(productDir, 'index.js')
   )
 
   if (await pathExists(appDir)) {
@@ -235,7 +259,7 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   )
   await writeTextFile(
     path.resolve(appDir, '.imports/product.js'),
-    "export * from '../../Sub/product/index.js'\n"
+    `export * from '${productImportPath}'\n`
   )
   await writeTextFile(
     path.resolve(appDir, '.imports/createSubPageViteConfig.js'),
@@ -259,18 +283,26 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   )
   await validateGeneratedPage(pageDefinitionPath)
 
+  const relativePageDefinitionPath = toPosixPath(
+    path.relative(repoDir, pageDefinitionPath)
+  )
+
   console.log(`Created page ${options.slug}`)
   console.log(`  app: apps/${pascalName}`)
-  console.log(`  product: apps/Sub/product/pages/${options.slug}.js`)
+  console.log(`  product: ${relativePageDefinitionPath}`)
   console.log(`  title: ${displayTitle}`)
   console.log(`  order: ${order}`)
   console.log('')
   console.log('Next steps:')
   console.log(
-    `  1. Register ${options.slug} in apps/Sub/product/pages/index.js`
+    `  1. Register ${options.slug} in ${toPosixPath(
+      path.relative(repoDir, path.resolve(productDir, 'pages/index.js'))
+    )}`
   )
   console.log(
-    `  2. Add ${options.slug} to the desired apps/Sub/product/profiles/*.js`
+    `  2. Add ${options.slug} to the desired ${toPosixPath(
+      path.relative(repoDir, path.resolve(productDir, 'profiles'))
+    )}/*.js`
   )
   console.log('  3. Run pnpm verify:sub -- --profile <profile-id>')
 }

@@ -1,6 +1,6 @@
 import { definePage } from '../definePage.js'
 
 export default definePage('page-f', {
-  title: 'PageF',
+  title: '页面F',
   order: 60,
 })

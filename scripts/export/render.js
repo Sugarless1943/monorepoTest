@@ -131,47 +131,133 @@ export { pages, pagesBySlug }
 `
 }
 
-export function renderDefaultProfile(displayName, pageSlugs) {
-  return `import { defineProfile } from '../defineProfile.js'
+export function renderLeafProductIndex() {
+  return `export { toCamelCase, toPascalCase } from './case.js'
+export { definePage } from './definePage.js'
+export {
+  getAllPages,
+  getPage,
+  listPageAssetFileNames,
+  pages,
+  pagesBySlug,
+  resolvePageSelectors,
+} from './pages/index.js'
+export {
+  getAllProfiles,
+  getProfile,
+  profiles,
+  profilesById,
+  resolveActiveProfile,
+  resolveBuildPlan,
+  resolveProfile,
+} from './resolver.js'
+`
+}
 
-export default defineProfile('default', {
+export function renderLeafResolver(displayName, pageSlugs) {
+  return `import {
+  getPage,
+  listPageAssetFileNames,
+  resolvePageSelectors,
+} from './pages/index.js'
+
+const leafProfile = Object.freeze({
+  id: 'default',
   displayName: ${JSON.stringify(displayName)},
   pages: ${formatArray(pageSlugs)},
   runtimeConfig: {
     brandName: ${JSON.stringify(displayName)},
   },
 })
-`
-}
 
-export function renderProfilesIndex() {
-  return `import defaultProfile from './default.js'
-
-const profiles = [defaultProfile]
-
-function assertUniqueProfiles() {
-  const seenIds = new Set()
-
-  for (const profile of profiles) {
-    if (seenIds.has(profile.id)) {
-      throw new Error(\`Duplicate profile id: \${profile.id}\`)
-    }
-
-    seenIds.add(profile.id)
-  }
-}
-
-assertUniqueProfiles()
-
+const profiles = Object.freeze([leafProfile])
 const profilesById = Object.freeze(
   Object.fromEntries(profiles.map((profile) => [profile.id, profile]))
 )
 
-export function getProfile(profileId) {
+function sortPages(pages) {
+  return pages
+    .slice()
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.slug.localeCompare(right.slug)
+    )
+}
+
+function createResolvedProfile({ id, displayName, runtimeConfig, pages }) {
+  const pageSlugs = pages.map((page) => page.slug)
+
+  return {
+    id,
+    displayName,
+    runtimeConfig,
+    pageSlugs,
+    pages,
+    menus: pages
+      .filter((page) => page.visibleInMenu)
+      .map((page) => ({
+        slug: page.slug,
+        path: page.routePath,
+        routeName: page.routeName,
+        label: page.menuLabel,
+      })),
+    legacyRoutes: pages.flatMap((page) =>
+      page.aliases.map((legacyPath) => ({
+        slug: page.slug,
+        path: legacyPath,
+        redirect: page.routePath,
+      }))
+    ),
+  }
+}
+
+function assertUniquePageFields(pages, profileId) {
+  const uniqueFields = [
+    ['routePath', 'route path'],
+    ['routeName', 'route name'],
+    ['chunkFileName', 'chunk file name'],
+  ]
+
+  for (const [field, label] of uniqueFields) {
+    const seen = new Map()
+
+    for (const page of pages) {
+      const value = page[field]
+
+      if (seen.has(value)) {
+        throw new Error(
+          \`Duplicate \${label} in profile \${profileId}: \${value} (\${seen.get(value)} and \${page.slug})\`
+        )
+      }
+
+      seen.set(value, page.slug)
+    }
+  }
+
+  const seenAliases = new Map()
+
+  for (const page of pages) {
+    const allPaths = [page.routePath, ...page.aliases]
+
+    for (const path of allPaths) {
+      if (seenAliases.has(path)) {
+        throw new Error(
+          \`Duplicate route alias in profile \${profileId}: \${path} (\${seenAliases.get(path)} and \${page.slug})\`
+        )
+      }
+
+      seenAliases.set(path, page.slug)
+    }
+  }
+}
+
+export function getProfile(profileId = 'default') {
   const profile = profilesById[profileId]
 
   if (!profile) {
-    throw new Error(\`Unknown profile id: \${profileId}\`)
+    throw new Error(
+      \`Unknown profile id: \${profileId}. This leaf export only contains default.\`
+    )
   }
 
   return profile
@@ -179,6 +265,60 @@ export function getProfile(profileId) {
 
 export function getAllProfiles() {
   return profiles.slice()
+}
+
+export function resolveProfile(profileId = 'default') {
+  const profileDefinition = getProfile(profileId)
+  const pages = sortPages(
+    profileDefinition.pages.map((pageSlug) => getPage(pageSlug))
+  )
+
+  assertUniquePageFields(pages, profileId)
+
+  const displayName = profileDefinition.displayName ?? profileId
+  const runtimeConfig = {
+    ...profileDefinition.runtimeConfig,
+    brandName: profileDefinition.runtimeConfig.brandName ?? displayName,
+  }
+
+  return createResolvedProfile({
+    id: profileDefinition.id,
+    displayName,
+    runtimeConfig,
+    pages,
+  })
+}
+
+export function resolveActiveProfile({
+  profileId = 'default',
+  selectors = [],
+} = {}) {
+  const profile = resolveProfile(profileId)
+  const pages = selectors.length
+    ? resolvePageSelectors(selectors, profile.pages)
+    : profile.pages
+
+  return createResolvedProfile({
+    id: profile.id,
+    displayName: profile.displayName,
+    runtimeConfig: profile.runtimeConfig,
+    pages,
+  })
+}
+
+export function resolveBuildPlan({
+  profileId = 'default',
+  selectors = [],
+} = {}) {
+  const profile = resolveActiveProfile({ profileId, selectors })
+  const pages = profile.pages
+
+  return {
+    profile,
+    pages,
+    pageSlugs: pages.map((page) => page.slug),
+    assetFileNames: listPageAssetFileNames(pages),
+  }
 }
 
 export { profiles, profilesById }
@@ -212,6 +352,7 @@ export function renderExportReadme({
   return `# ${displayName}
 
 这个工程由主仓按客户 profile 导出，默认已经裁剪为单客户源码包。
+导出后的工程是叶子交付项目，不再提供二次 \`export\` 能力。
 
 ## 导出信息
 

@@ -3,10 +3,10 @@ import path from 'node:path'
 import { resolveExportPlan } from '#product'
 import { pathExists } from '../lib/fs.js'
 import { parseExportArgs } from './args.js'
-import { ROOT_FILES_TO_COPY, ROOT_SUPPORT_DIRS } from './constants.js'
+import { ROOT_FILES_TO_COPY, ROOT_SUPPORT_FILES } from './constants.js'
 import { copyDirectory, copyFileIfExists } from './copy.js'
 import { rewriteRootPackage, rewriteSubPackage } from './package.js'
-import { rewriteProductFiles } from './product.js'
+import { rewritePageProductImports, rewriteProductFiles } from './product.js'
 import { writeExportArtifacts } from './artifacts.js'
 import {
   collectExportPackageDirs,
@@ -52,11 +52,11 @@ export async function runExport(rawArgs = process.argv.slice(2)) {
     await copyFileIfExists({ repoDir, relativePath, exportDir })
   }
 
-  for (const relativeDir of [
-    ...ROOT_SUPPORT_DIRS,
-    ...selectedAppDirs,
-    ...packageDirs,
-  ]) {
+  for (const relativePath of ROOT_SUPPORT_FILES) {
+    await copyFileIfExists({ repoDir, relativePath, exportDir })
+  }
+
+  for (const relativeDir of [...selectedAppDirs, ...packageDirs]) {
     await copyDirectory({ repoDir, relativePath: relativeDir, exportDir })
   }
 
@@ -67,7 +67,8 @@ export async function runExport(rawArgs = process.argv.slice(2)) {
 
   await rewriteRootPackage({ repoDir, exportDir, plan })
   await rewriteSubPackage({ exportDir, plan, exportPackageNames })
-  await rewriteProductFiles({ exportDir, plan })
+  await rewriteProductFiles({ repoDir, exportDir, plan })
+  await rewritePageProductImports({ exportDir, pages: plan.pages })
   await writeExportArtifacts({ repoDir, exportDir, plan, packageDirs })
 
   console.log(`Exported ${plan.profile.id} to ${toRelativePath(exportDir)}`)

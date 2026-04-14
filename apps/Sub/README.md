@@ -6,10 +6,9 @@
 - 布局容器
 - 运行时公共依赖
 - 动态加载各个 page 产物
-- `product` 真源
 - 交付工程脚本
 
-`product`、`scripts` 和 `tooling` 的仓库级说明见根目录 [README.md](../../README.md)。
+根目录 `product`、`scripts` 和 `apps/Sub/tooling` 的仓库级说明见根目录 [README.md](../../README.md)。
 
 在 `apps/Sub` 目录里可以直接执行：
 
@@ -25,7 +24,7 @@ pnpm verify
 pnpm create:page -- page-f
 ```
 
-这个命令只会生成 page 骨架和 `apps/Sub/product/pages/page-f.js`，不会自动改 `apps/Sub/product/pages/index.js` 或任何 profile。
+这个命令只会生成 page 骨架和 `product/pages/page-f.js`，不会自动改 `product/pages/index.js` 或任何 profile。
 
 这些和交付工程直接相关的能力现在都在 `apps/Sub/scripts` 下，例如：
 
