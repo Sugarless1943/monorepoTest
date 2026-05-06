@@ -3,25 +3,36 @@ import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 import { subPageBuildPlugin } from './subPageBuildPlugin.js'
 
-export function createSubPageViteConfig({ appDir, chunkFileName, libName }) {
+export function createSubGroupViteConfig({ appDir, pages }) {
   const outDir = path.resolve(appDir, '../Sub/dist/assets')
+  const groupEntryFile = path.resolve(appDir, 'src/index.ts')
+  const chunkFileName = `${pages[0]?.groupSlug ?? 'group'}.js`
+  const cssFileName = `${pages[0]?.groupSlug ?? 'group'}.css`
 
   return defineConfig({
-    plugins: [vue(), subPageBuildPlugin({ chunkFileName, outDir })],
+    plugins: [
+      vue(),
+      subPageBuildPlugin({
+        chunkFileName,
+        outDir,
+        cssFileName,
+      }),
+    ],
     define: {
       'process.env.NODE_ENV': '"production"',
     },
     build: {
       minify: 'esbuild',
       outDir,
+      emptyOutDir: false,
       lib: {
-        entry: 'src/index.ts',
-        name: libName,
-        fileName: () => chunkFileName,
+        entry: groupEntryFile,
+        cssFileName: pages[0]?.groupSlug ?? 'group',
         formats: ['es'],
+        fileName: () => chunkFileName,
       },
       rollupOptions: {
-        // 开发态时，PageA 这类子应用源码里的 `import { ... } from 'vue'`
+        // 开发态时，GroupA 这类子应用源码里的 `import { ... } from 'vue'`
         // 由 pnpm workspace 的依赖解析直接命中真实的 vue 包。
         //
         // 生产构建时，我们不希望每个 page 都各自打进一份 vue，
@@ -29,7 +40,7 @@ export function createSubPageViteConfig({ appDir, chunkFileName, libName }) {
         external: ['vue'],
         output: {
           manualChunks: undefined,
-          assetFileNames: '[name].[ext]',
+          assetFileNames: '[name][extname]',
           paths: {
             // 这里定义了“构建态的约定”：
             // 子应用产物里所有原本指向 `vue` 的 import，

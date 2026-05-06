@@ -40,6 +40,7 @@ export async function writeExportArtifacts({
       profileId: plan.profile.id,
       projectSlug: plan.projectSlug,
       pages: plan.pages,
+      groups: plan.profile.groups,
       packageDirs,
       sourceRepo,
       sourceRevision,

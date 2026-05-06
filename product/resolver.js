@@ -1,10 +1,19 @@
+import { getAllPages, getPage, resolvePageSelectors } from './pages/index.js'
 import {
-  getAllPages,
-  getPage,
-  listPageAssetFileNames,
-  resolvePageSelectors,
-} from './pages/index.js'
+  getAllGroups,
+  getGroup,
+  listGroupAssetFileNames,
+} from './groups/index.js'
 import { getProfile, profilesById } from './profiles/index.js'
+
+function sortGroups(groups) {
+  return groups
+    .slice()
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.slug.localeCompare(right.slug)
+    )
+}
 
 function sortPages(pages) {
   return pages
@@ -15,7 +24,64 @@ function sortPages(pages) {
     )
 }
 
-function createResolvedProfile({ id, displayName, runtimeConfig, pages }) {
+function flattenGroupedPages(groups) {
+  return sortPages(groups.flatMap((group) => group.pages))
+}
+
+function resolveGroupsForPages(pages) {
+  const selectedPageSlugs = new Set(pages.map((page) => page.slug))
+  const groupedPageSlugs = new Set()
+  const groups = []
+
+  for (const group of sortGroups(getAllGroups())) {
+    const resolvedPages = sortPages(
+      group.pageSlugs
+        .map((pageSlug) => getPage(pageSlug))
+        .filter((page) => selectedPageSlugs.has(page.slug))
+    )
+
+    if (resolvedPages.length === 0) {
+      continue
+    }
+
+    for (const page of resolvedPages) {
+      if (page.groupSlug !== group.slug) {
+        throw new Error(
+          `Page ${page.slug} is assigned to ${page.groupSlug}, but group ${group.slug} includes it`
+        )
+      }
+
+      groupedPageSlugs.add(page.slug)
+    }
+
+    groups.push({
+      ...group,
+      pages: resolvedPages,
+    })
+  }
+
+  for (const page of pages) {
+    if (!getGroup(page.groupSlug)) {
+      throw new Error(
+        `Unknown group slug for page ${page.slug}: ${page.groupSlug}`
+      )
+    }
+
+    if (!groupedPageSlugs.has(page.slug)) {
+      throw new Error(`Page ${page.slug} is not registered in its group`)
+    }
+  }
+
+  return groups
+}
+
+function createResolvedProfile({
+  id,
+  displayName,
+  runtimeConfig,
+  pages,
+  groups,
+}) {
   const pageSlugs = pages.map((page) => page.slug)
 
   return {
@@ -24,6 +90,7 @@ function createResolvedProfile({ id, displayName, runtimeConfig, pages }) {
     runtimeConfig,
     pageSlugs,
     pages,
+    groups,
     menus: pages
       .filter((page) => page.visibleInMenu)
       .map((page) => ({
@@ -88,7 +155,6 @@ function assertUniquePageFields(pages, profileId) {
   const uniqueFields = [
     ['routePath', 'route path'],
     ['routeName', 'route name'],
-    ['chunkFileName', 'chunk file name'],
   ]
 
   for (const [field, label] of uniqueFields) {
@@ -140,12 +206,14 @@ export function resolveProfile(profileId = 'default') {
     ...mergedProfile.runtimeConfig,
     brandName: mergedProfile.runtimeConfig.brandName ?? displayName,
   }
+  const groups = resolveGroupsForPages(pages)
 
   return createResolvedProfile({
     id: profileId,
     displayName,
     runtimeConfig,
     pages,
+    groups,
   })
 }
 
@@ -157,12 +225,14 @@ export function resolveActiveProfile({
   const pages = selectors.length
     ? resolvePageSelectors(selectors, profile.pages)
     : profile.pages
+  const groups = resolveGroupsForPages(pages)
 
   return createResolvedProfile({
     id: profile.id,
     displayName: profile.displayName,
     runtimeConfig: profile.runtimeConfig,
     pages,
+    groups,
   })
 }
 
@@ -170,14 +240,30 @@ export function resolveBuildPlan({
   profileId = 'default',
   selectors = [],
 } = {}) {
-  const profile = resolveActiveProfile({ profileId, selectors })
-  const pages = profile.pages
+  const activeProfile = resolveActiveProfile({ profileId, selectors })
+  const selectedGroupSlugs = new Set(
+    activeProfile.groups.map((group) => group.slug)
+  )
+  const fullProfile = resolveProfile(profileId)
+  const groups = fullProfile.groups.filter((group) =>
+    selectedGroupSlugs.has(group.slug)
+  )
+  const pages = flattenGroupedPages(groups)
+  const profile = createResolvedProfile({
+    id: fullProfile.id,
+    displayName: fullProfile.displayName,
+    runtimeConfig: fullProfile.runtimeConfig,
+    pages,
+    groups,
+  })
 
   return {
     profile,
     pages,
+    groups: profile.groups,
     pageSlugs: pages.map((page) => page.slug),
-    assetFileNames: listPageAssetFileNames(pages),
+    groupSlugs: profile.groups.map((group) => group.slug),
+    assetFileNames: listGroupAssetFileNames(profile.groups),
   }
 }
 

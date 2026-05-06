@@ -53,6 +53,15 @@ export function createPageBuildScripts(pages, baseRelativeDir) {
   )
 }
 
+function createGroupBuildScripts(groups) {
+  return Object.fromEntries(
+    groups.map((group) => [
+      `build:${group.title}`,
+      `node ./scripts/build.js ${group.slug}`,
+    ])
+  )
+}
+
 export async function rewriteRootPackage({ repoDir, exportDir, plan }) {
   const sourcePackage = await readJson(path.resolve(repoDir, 'package.json'))
   const targetPackage = {
@@ -76,7 +85,7 @@ export async function rewriteRootPackage({ repoDir, exportDir, plan }) {
       'verify:sub': 'node ./scripts/runSubPackageScript.js verify',
       preview: 'node ./scripts/runSubPackageScript.js preview',
       ...Object.fromEntries(
-        Object.entries(createPageBuildScripts(plan.pages, 'apps/')).map(
+        Object.entries(createGroupBuildScripts(plan.profile.groups)).map(
           ([scriptName]) => [
             scriptName,
             `node ./scripts/runSubPackageScript.js ${scriptName}`,
@@ -105,7 +114,7 @@ export async function rewriteSubPackage({
     scripts: {
       dev: 'vite',
       build: 'node ./scripts/build.js',
-      ...createPageBuildScripts(plan.pages, '../'),
+      ...createGroupBuildScripts(plan.profile.groups),
       'create:page': 'node ./scripts/createPage.js',
       'build:host': 'pnpm exec vite build',
       'check:dist': 'node ./scripts/check-dist.js',

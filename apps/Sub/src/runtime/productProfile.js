@@ -21,6 +21,7 @@ export const productProfile = resolveActiveProfile({
   profileId: activeProductProfileId,
   selectors: activeProductPageSlugs,
 })
+export const productGroups = productProfile.groups
 export const productPages = productProfile.pages
 export const productMenus = productProfile.menus
 export const productLegacyRoutes = productProfile.legacyRoutes

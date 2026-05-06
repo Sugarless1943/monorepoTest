@@ -59,7 +59,7 @@ export async function rewriteProductFiles({ repoDir, exportDir, plan }) {
   )
   await writeFile(
     path.resolve(pagesDir, 'index.js'),
-    renderPagesIndex(plan.pages)
+    renderPagesIndex(plan.pages, plan.profile.groups)
   )
 }
 

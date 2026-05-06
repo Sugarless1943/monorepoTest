@@ -21,10 +21,10 @@ pnpm verify
 如果要在当前 Sub 体系里新增一个 page，也可以直接执行：
 
 ```bash
-pnpm create:page -- page-f
+pnpm create:page -- page-7 --group group-c
 ```
 
-这个命令只会生成 page 骨架和 `product/pages/page-f.js`，不会自动改 `product/pages/index.js` 或任何 profile。
+这个命令只会生成 page 骨架和 `product/pages/page-7.js`，不会自动改 `product/pages/index.js`、group 定义或任何 profile。
 
 这些和交付工程直接相关的能力现在都在 `apps/Sub/scripts` 下，例如：
 

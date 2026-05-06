@@ -1,11 +1,19 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '../components/Layout.vue'
 import Home from '../views/Home.vue'
-import { productLegacyRoutes, productPages } from '../runtime/productProfile.js'
+import {
+  productGroups,
+  productLegacyRoutes,
+  productPages,
+} from '../runtime/productProfile.js'
 
-function loadProdPage(jsPath) {
-  return import(/* @vite-ignore */ jsPath).then((mod) => mod.default)
-}
+const groupChunkLoaders = new Map(
+  productGroups.map((group) => [
+    group.slug,
+    () => import(/* @vite-ignore */ `/assets/${group.chunkFileName}`),
+  ])
+)
+const loadedGroupChunks = new Map()
 
 async function loadPage(page) {
   if (import.meta.env.DEV) {
@@ -13,7 +21,26 @@ async function loadPage(page) {
     return loadDevPage(page)
   }
 
-  return loadProdPage(`/assets/${page.chunkFileName}`)
+  if (!loadedGroupChunks.has(page.groupSlug)) {
+    const loadGroup = groupChunkLoaders.get(page.groupSlug)
+
+    if (!loadGroup) {
+      throw new Error(`Missing group chunk loader for ${page.groupSlug}`)
+    }
+
+    loadedGroupChunks.set(page.groupSlug, loadGroup())
+  }
+
+  const groupModule = await loadedGroupChunks.get(page.groupSlug)
+  const component = groupModule[page.moduleExportName]
+
+  if (!component) {
+    throw new Error(
+      `Missing export ${page.moduleExportName} in group chunk ${page.groupSlug}`
+    )
+  }
+
+  return component
 }
 
 function toChildPath(path) {

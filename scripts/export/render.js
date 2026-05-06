@@ -1,7 +1,3 @@
-function toExportPageModuleFile(pageSlug) {
-  return `${pageSlug}.js`
-}
-
 function toPageImportName(page) {
   return page.camelName
 }
@@ -10,21 +6,29 @@ function formatArray(values) {
   return `[${values.map((value) => JSON.stringify(value)).join(', ')}]`
 }
 
-export function renderPagesIndex(selectedPages) {
+export function renderPagesIndex(selectedPages, groups = []) {
   const imports = selectedPages
-    .map(
-      (page) =>
-        `import ${toPageImportName(page)} from './${toExportPageModuleFile(page.slug)}'`
-    )
+    .map((page) => `import ${toPageImportName(page)} from './${page.slug}.js'`)
     .join('\n')
 
   const pageList = selectedPages
     .map((page) => toPageImportName(page))
     .join(', ')
+  const groupList = groups
+    .map(
+      (group) => `{
+  slug: ${JSON.stringify(group.slug)},
+  title: ${JSON.stringify(group.title)},
+  pageSlugs: ${formatArray(group.pageSlugs)},
+  chunkFileName: ${JSON.stringify(group.chunkFileName ?? `${group.slug}.js`)},
+}`
+    )
+    .join(',\n')
 
   return `${imports}
 
 const pages = [${pageList}]
+const groups = [${groupList}]
 
 function normalizeSelector(value) {
   return String(value ?? '')
@@ -39,8 +43,6 @@ function uniqueValues(values) {
 }
 
 function createPageReferenceKeys(page) {
-  const appDirName = page.appDir.split('/').pop()
-
   return uniqueValues(
     [
       page.slug,
@@ -48,10 +50,16 @@ function createPageReferenceKeys(page) {
       page.pascalName,
       page.routeName,
       page.routePath,
-      page.chunkFileName,
-      appDirName,
       page.slug.replace(/-/g, ''),
     ].map(normalizeSelector)
+  )
+}
+
+function createGroupReferenceKeys(group) {
+  return uniqueValues(
+    [group.slug, group.title, group.slug.replace(/-/g, '')].map(
+      normalizeSelector
+    )
   )
 }
 
@@ -88,10 +96,15 @@ export function getPage(slug) {
 }
 
 export function listPageAssetFileNames(targetPages = pages) {
-  return targetPages.flatMap((page) => [
-    page.chunkFileName,
-    page.chunkFileName.replace(/\\.js$/, '.css'),
-  ])
+  const groupBySlug = new Map(groups.map((group) => [group.slug, group]))
+
+  return [
+    ...new Set(
+      targetPages
+        .map((page) => groupBySlug.get(page.groupSlug)?.chunkFileName)
+        .filter(Boolean)
+    ),
+  ]
 }
 
 export function resolvePageSelectors(selectors, availablePages = pages) {
@@ -99,15 +112,42 @@ export function resolvePageSelectors(selectors, availablePages = pages) {
     return availablePages.slice()
   }
 
-  const referenceMap = new Map()
+  const pageReferenceMap = new Map()
+  const groupReferenceMap = new Map()
+  const availablePageSlugs = new Set(availablePages.map((page) => page.slug))
 
   for (const page of availablePages) {
     for (const key of createPageReferenceKeys(page)) {
-      if (referenceMap.has(key) && referenceMap.get(key).slug !== page.slug) {
+      if (
+        pageReferenceMap.has(key) &&
+        pageReferenceMap.get(key).slug !== page.slug
+      ) {
         throw new Error(\`Ambiguous page selector key: \${key}\`)
       }
 
-      referenceMap.set(key, page)
+      pageReferenceMap.set(key, page)
+    }
+  }
+
+  for (const group of groups) {
+    const groupPages = availablePages.filter(
+      (page) =>
+        page.groupSlug === group.slug && availablePageSlugs.has(page.slug)
+    )
+
+    if (groupPages.length === 0) {
+      continue
+    }
+
+    for (const key of createGroupReferenceKeys(group)) {
+      if (
+        groupReferenceMap.has(key) &&
+        groupReferenceMap.get(key).slug !== group.slug
+      ) {
+        throw new Error(\`Ambiguous group selector key: \${key}\`)
+      }
+
+      groupReferenceMap.set(key, group)
     }
   }
 
@@ -115,13 +155,24 @@ export function resolvePageSelectors(selectors, availablePages = pages) {
 
   for (const selector of selectors) {
     const key = normalizeSelector(selector)
-    const page = referenceMap.get(key)
+    const page = pageReferenceMap.get(key)
 
-    if (!page) {
-      throw new Error(\`Unknown page selector: \${selector}\`)
+    if (page) {
+      selectedSlugs.add(page.slug)
+      continue
     }
 
-    selectedSlugs.add(page.slug)
+    const group = groupReferenceMap.get(key)
+
+    if (!group) {
+      throw new Error(\`Unknown page/group selector: \${selector}\`)
+    }
+
+    for (const pageSlug of group.pageSlugs) {
+      if (availablePageSlugs.has(pageSlug)) {
+        selectedSlugs.add(pageSlug)
+      }
+    }
   }
 
   return availablePages.filter((page) => selectedSlugs.has(page.slug))
@@ -215,7 +266,6 @@ function assertUniquePageFields(pages, profileId) {
   const uniqueFields = [
     ['routePath', 'route path'],
     ['routeName', 'route name'],
-    ['chunkFileName', 'chunk file name'],
   ]
 
   for (const [field, label] of uniqueFields) {
@@ -330,6 +380,7 @@ export function renderExportReadme({
   profileId,
   projectSlug,
   pages,
+  groups,
   packageDirs,
   sourceRepo,
   sourceRevision,
@@ -343,10 +394,13 @@ export function renderExportReadme({
       : '- 无额外 workspace package'
   const incrementalExamples = [
     '- `pnpm build:host`：只构建 host',
-    ...pages.map(
-      (page) => `- \`pnpm build:${page.camelName}\`：只构建 ${page.menuLabel}`
+    ...groups.map(
+      (group) =>
+        `- \`pnpm build:${group.title}\`：只构建 ${group.title}（${group.pages
+          .map((page) => page.menuLabel)
+          .join(' / ')}）`
     ),
-    `- \`pnpm build -- ${pages[0]?.camelName ?? 'pageA'}\`：增量构建单个页面`,
+    `- \`pnpm build -- ${groups[0]?.slug ?? 'group-a'}\`：按 group 增量构建`,
   ].join('\n')
 
   return `# ${displayName}

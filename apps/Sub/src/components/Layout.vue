@@ -11,10 +11,10 @@ const route = useRoute()
 const menuTitle = productProfile.runtimeConfig.brandName ?? '菜单'
 const menus = [{ path: '/', routeName: 'Home', label: '首页' }, ...productMenus]
 const pageTitlesByRouteName = Object.fromEntries(
-  productPages.map((page) => [page.routeName, page.pascalName])
+  productPages.map((page) => [page.routeName, page.title])
 )
 const pageTitlesByPath = Object.fromEntries(
-  productPages.map((page) => [page.routePath, page.pascalName])
+  productPages.map((page) => [page.routePath, page.title])
 )
 const currentPageTitle = computed(() => {
   if (route.name === 'Home') {

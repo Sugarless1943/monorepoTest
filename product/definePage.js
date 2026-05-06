@@ -9,10 +9,16 @@ export function definePage(slug, options = {}) {
     throw new Error(`Invalid page slug: ${slug}`)
   }
 
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.groupSlug ?? '')) {
+    throw new Error(`Invalid group slug for page ${slug}: ${options.groupSlug}`)
+  }
+
   const pascalName = options.pascalName ?? toPascalCase(slug)
   const camelName = options.camelName ?? toCamelCase(slug)
   const routePath = options.routePath ?? `/${slug}`
-  const legacyRoutePath = options.legacyRoutePath ?? `/${camelName}`
+  const legacyRoutePath = Object.hasOwn(options, 'legacyRoutePath')
+    ? options.legacyRoutePath
+    : `/${camelName}`
   const aliases = normalizeAliases(
     [legacyRoutePath, ...(options.aliases ?? [])].filter(
       (value) => value && value !== routePath
@@ -21,6 +27,7 @@ export function definePage(slug, options = {}) {
 
   return Object.freeze({
     slug,
+    groupSlug: options.groupSlug,
     title: options.title ?? pascalName,
     menuLabel: options.menuLabel ?? options.title ?? pascalName,
     order: options.order ?? 0,
@@ -28,6 +35,7 @@ export function definePage(slug, options = {}) {
     routePath,
     routeName: options.routeName ?? slug,
     aliases,
+    moduleExportName: options.moduleExportName ?? camelName,
     pascalName,
     camelName,
     chunkFileName: options.chunkFileName ?? `${slug}.js`,

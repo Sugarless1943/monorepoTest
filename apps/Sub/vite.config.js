@@ -7,7 +7,7 @@ export default defineConfig({
   base: '/',
   plugins: [vue()],
   build: {
-    // 保留已有 page chunk，便于仅重打指定子应用时复用其他产物
+    // 保留已有 group chunk，便于仅重打指定子应用组时复用其他产物
     emptyOutDir: false,
     rollupOptions: {
       preserveEntrySignatures: 'strict',

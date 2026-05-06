@@ -15,6 +15,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "node ./scripts/build.js",
     "build:sub": "cd apps/Sub && pnpm build",
+    "build:groupA": "node ./scripts/build.js group-a",
+    "build:groupB": "node ./scripts/build.js group-b",
+    "build:groupC": "node ./scripts/build.js group-c",
     "create:page": "node ./scripts/runSubPackageScript.js create:page",
     "export": "node ./scripts/export.js",
     "verify": "node ./internal/repoVerify.js",
@@ -33,6 +36,7 @@
   "devDependencies": {
     "@types/node": "^25.3.5",
     "@vitejs/plugin-vue": "^6.0.4",
+    "esbuild": "^0.25.11",
     "eslint": "^10.0.3",
     "git-format-staged": "^4.0.1",
     "husky": "^9.1.7",

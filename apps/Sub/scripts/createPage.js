@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { getAllPages, toPascalCase } from '#product'
+import { getAllPages, getGroup, toPascalCase } from '#product'
 import { pathExists, writeJson } from './lib/fs.js'
 
 const subDir = path.resolve(import.meta.dirname, '..')
@@ -29,12 +29,12 @@ async function resolveProductDir() {
 function printUsage() {
   console.log(`Usage:
 
-  pnpm create:page -- <page-slug> [--title <title>] [--order <number>]
+  pnpm create:page -- <page-slug> --group <group-slug> [--title <title>] [--order <number>]
 
 Examples:
 
-  pnpm create:page -- page-f
-  pnpm create:page -- page-g --title "页面G" --order 70
+  pnpm create:page -- page-7 --group group-c
+  pnpm create:page -- page-8 --group group-c --title "page8" --order 80
 `)
 }
 
@@ -51,6 +51,7 @@ function normalizePageSlug(rawValue) {
 function parseArgs(rawArgs) {
   const options = {
     slug: '',
+    groupSlug: '',
     title: '',
     order: null,
   }
@@ -75,6 +76,21 @@ function parseArgs(rawArgs) {
 
     if (arg?.startsWith('--title=')) {
       options.title = arg.slice('--title='.length).trim()
+      continue
+    }
+
+    if (arg === '--group') {
+      if (rawArgs[index + 1] === undefined) {
+        throw new Error('Missing value for --group')
+      }
+
+      options.groupSlug = rawArgs[index + 1]?.trim() ?? ''
+      index += 1
+      continue
+    }
+
+    if (arg?.startsWith('--group=')) {
+      options.groupSlug = arg.slice('--group='.length).trim()
       continue
     }
 
@@ -107,8 +123,16 @@ function parseArgs(rawArgs) {
     throw new Error('Missing page slug')
   }
 
+  if (!options.groupSlug) {
+    throw new Error('Missing group slug')
+  }
+
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.slug)) {
     throw new Error(`Invalid page slug: ${options.slug}`)
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(options.groupSlug)) {
+    throw new Error(`Invalid group slug: ${options.groupSlug}`)
   }
 
   if (options.order !== null && !Number.isInteger(options.order)) {
@@ -127,7 +151,7 @@ function getNextOrder(existingPages) {
   return maxOrder + 10
 }
 
-function renderPagePackageJson(packageName) {
+function renderGroupPackageJson(packageName) {
   return {
     name: packageName,
     version: '1.0.0',
@@ -141,7 +165,8 @@ function renderPagePackageJson(packageName) {
     },
     scripts: {
       test: 'echo "Error: no test specified" && exit 1',
-      build: 'vite build',
+      build:
+        'node ../../node_modules/vite/bin/vite.js build --config vite.config.js',
     },
     keywords: [],
     author: '',
@@ -151,6 +176,36 @@ function renderPagePackageJson(packageName) {
       vue: '^3.5.25',
     },
   }
+}
+
+function renderGroupPackageViteConfig(group) {
+  return `import { getAllPages } from '#product'
+import { createSubGroupViteConfig } from '#tooling/createSubPageViteConfig.js'
+
+const pages = getAllPages().filter((page) => page.appDir === ${JSON.stringify(
+    group.appDir
+  )})
+
+export default createSubGroupViteConfig({
+  appDir: __dirname,
+  pages,
+})
+`
+}
+
+function renderGroupPackageIndex(pages) {
+  return `${pages
+    .map((page) => {
+      const entryFile = page.entryFile
+      const exportPath = entryFile
+        .replace(/^src\//, './')
+        .replace(/\/index\.ts$/, '/index')
+      return `export { default as ${page.moduleExportName} } from ${JSON.stringify(
+        exportPath
+      )}`
+    })
+    .join('\n')}
+`
 }
 
 function renderPageComponent({ slug, displayTitle, pascalName }) {
@@ -182,26 +237,26 @@ p {
 `
 }
 
-function renderPageDefinition({ slug, displayTitle, order }) {
+function renderPageDefinition({
+  slug,
+  groupSlug,
+  displayTitle,
+  order,
+  packageName,
+  appDir,
+  entryFile,
+  componentFile,
+}) {
   return `import { definePage } from '../definePage.js'
 
 export default definePage(${JSON.stringify(slug)}, {
+  groupSlug: ${JSON.stringify(groupSlug)},
   title: ${JSON.stringify(displayTitle)},
   order: ${order},
-})
-`
-}
-
-function renderPageViteConfig(slug) {
-  return `import { getPage } from '#product'
-import { createSubPageViteConfig } from '#tooling/createSubPageViteConfig.js'
-
-const page = getPage(${JSON.stringify(slug)})
-
-export default createSubPageViteConfig({
-  appDir: __dirname,
-  chunkFileName: page.chunkFileName,
-  libName: page.libName,
+  packageName: ${JSON.stringify(packageName)},
+  appDir: ${JSON.stringify(appDir)},
+  entryFile: ${JSON.stringify(entryFile)},
+  componentFile: ${JSON.stringify(componentFile)},
 })
 `
 }
@@ -219,16 +274,20 @@ async function validateGeneratedPage(pageDefinitionPath) {
 export async function createPage(rawArgs = process.argv.slice(2)) {
   const options = parseArgs(rawArgs)
   const existingPages = getAllPages()
+  const group = getGroup(options.groupSlug)
 
   if (existingPages.some((page) => page.slug === options.slug)) {
     throw new Error(`Page already exists: ${options.slug}`)
   }
 
   const pascalName = toPascalCase(options.slug)
-  const packageName = `@monorepo/${options.slug}`
+  const pageDirName = options.slug.replace(/-/g, '')
+  const packageName = group.packageName
   const displayTitle = options.title || pascalName
   const order = options.order ?? getNextOrder(existingPages)
-  const appDir = path.resolve(repoDir, 'apps', pascalName)
+  const appDir = path.resolve(repoDir, group.appDir)
+  const entryFile = `src/${pageDirName}/index.ts`
+  const componentFile = `src/${pageDirName}/index.vue`
   const productDir = await resolveProductDir()
   const pageDefinitionPath = path.resolve(
     productDir,
@@ -240,23 +299,29 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
     path.resolve(productDir, 'index.js')
   )
 
-  if (await pathExists(appDir)) {
-    throw new Error(
-      `App directory already exists: ${path.relative(repoDir, appDir)}`
-    )
-  }
-
   if (await pathExists(pageDefinitionPath)) {
     throw new Error(
       `Page definition already exists: ${path.relative(repoDir, pageDefinitionPath)}`
     )
   }
 
+  if (await pathExists(path.resolve(appDir, entryFile))) {
+    throw new Error(
+      `Page entry already exists: ${toPosixPath(
+        path.relative(repoDir, path.resolve(appDir, entryFile))
+      )}`
+    )
+  }
+
   await mkdir(appDir, { recursive: true })
-  await writeJson(
-    path.resolve(appDir, 'package.json'),
-    renderPagePackageJson(packageName)
-  )
+
+  if (!(await pathExists(path.resolve(appDir, 'package.json')))) {
+    await writeJson(
+      path.resolve(appDir, 'package.json'),
+      renderGroupPackageJson(packageName)
+    )
+  }
+
   await writeTextFile(
     path.resolve(appDir, '.imports/product.js'),
     `export * from '${productImportPath}'\n`
@@ -266,20 +331,49 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
     "export * from '../../Sub/tooling/createSubPageViteConfig.js'\n"
   )
   await writeTextFile(
+    path.resolve(appDir, 'vite.config.js'),
+    renderGroupPackageViteConfig(group)
+  )
+
+  const groupPages = [
+    ...existingPages
+      .filter((page) => page.groupSlug === group.slug)
+      .map((page) => ({
+        entryFile: page.entryFile,
+        moduleExportName: page.moduleExportName,
+      })),
+    {
+      entryFile,
+      moduleExportName: options.slug.replace(/-([a-z0-9])/g, (_, char) =>
+        char.toUpperCase()
+      ),
+    },
+  ].sort((left, right) => left.entryFile.localeCompare(right.entryFile))
+  await writeTextFile(
     path.resolve(appDir, 'src/index.ts'),
+    renderGroupPackageIndex(groupPages)
+  )
+
+  await writeTextFile(
+    path.resolve(appDir, entryFile),
     "export { default } from './index.vue'\n"
   )
   await writeTextFile(
-    path.resolve(appDir, 'src/index.vue'),
+    path.resolve(appDir, componentFile),
     renderPageComponent({ slug: options.slug, displayTitle, pascalName })
   )
   await writeTextFile(
-    path.resolve(appDir, 'vite.config.js'),
-    renderPageViteConfig(options.slug)
-  )
-  await writeTextFile(
     pageDefinitionPath,
-    renderPageDefinition({ slug: options.slug, displayTitle, order })
+    renderPageDefinition({
+      slug: options.slug,
+      groupSlug: options.groupSlug,
+      displayTitle,
+      order,
+      packageName,
+      appDir: group.appDir,
+      entryFile,
+      componentFile,
+    })
   )
   await validateGeneratedPage(pageDefinitionPath)
 
@@ -288,8 +382,9 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   )
 
   console.log(`Created page ${options.slug}`)
-  console.log(`  app: apps/${pascalName}`)
+  console.log(`  app: ${group.appDir}`)
   console.log(`  product: ${relativePageDefinitionPath}`)
+  console.log(`  group: ${options.groupSlug}`)
   console.log(`  title: ${displayTitle}`)
   console.log(`  order: ${order}`)
   console.log('')
@@ -301,10 +396,15 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   )
   console.log(
     `  2. Add ${options.slug} to the desired ${toPosixPath(
+      path.relative(repoDir, path.resolve(productDir, 'groups'))
+    )}/*.js`
+  )
+  console.log(
+    `  3. Add ${options.slug} to the desired ${toPosixPath(
       path.relative(repoDir, path.resolve(productDir, 'profiles'))
     )}/*.js`
   )
-  console.log('  3. Run pnpm verify:sub -- --profile <profile-id>')
+  console.log('  4. Run pnpm verify:sub -- --profile <profile-id>')
 }
 
 try {

@@ -1,4 +1,4 @@
-const devPageModules = import.meta.glob('../../../*/src/index.vue')
+const devPageModules = import.meta.glob('../../../*/src/**/*.vue')
 
 function toDevModulePath(page) {
   const appDirName = page.appDir.replace(/^apps\//, '')

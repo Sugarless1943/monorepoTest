@@ -1,11 +1,13 @@
-import pageA from './page-a.js'
-import pageB from './page-b.js'
-import pageC from './page-c.js'
-import pageD from './page-d.js'
-import pageE from './page-e.js'
-import pageF from './page-f.js'
+import page1 from './page-1.js'
+import page2 from './page-2.js'
+import page3 from './page-3.js'
+import page4 from './page-4.js'
+import page5 from './page-5.js'
+import page6 from './page-6.js'
 
-const pages = [pageA, pageB, pageC, pageD, pageE, pageF]
+import { getAllGroups, getGroup } from '../groups/index.js'
+
+const pages = [page1, page2, page3, page4, page5, page6]
 
 function normalizeSelector(value) {
   return String(value ?? '')
@@ -20,8 +22,6 @@ function uniqueValues(values) {
 }
 
 function createPageReferenceKeys(page) {
-  const appDirName = page.appDir.split('/').pop()
-
   return uniqueValues(
     [
       page.slug,
@@ -29,10 +29,16 @@ function createPageReferenceKeys(page) {
       page.pascalName,
       page.routeName,
       page.routePath,
-      page.chunkFileName,
-      appDirName,
       page.slug.replace(/-/g, ''),
     ].map(normalizeSelector)
+  )
+}
+
+function createGroupReferenceKeys(group) {
+  return uniqueValues(
+    [group.slug, group.title, group.slug.replace(/-/g, '')].map(
+      normalizeSelector
+    )
   )
 }
 
@@ -69,10 +75,11 @@ export function getPage(slug) {
 }
 
 export function listPageAssetFileNames(targetPages = pages) {
-  return targetPages.flatMap((page) => [
-    page.chunkFileName,
-    page.chunkFileName.replace(/\.js$/, '.css'),
-  ])
+  return [
+    ...new Set(
+      targetPages.map((page) => getGroup(page.groupSlug).chunkFileName)
+    ),
+  ]
 }
 
 export function resolvePageSelectors(selectors, availablePages = pages) {
@@ -80,15 +87,42 @@ export function resolvePageSelectors(selectors, availablePages = pages) {
     return availablePages.slice()
   }
 
-  const referenceMap = new Map()
+  const pageReferenceMap = new Map()
+  const groupReferenceMap = new Map()
+  const availablePageSlugs = new Set(availablePages.map((page) => page.slug))
 
   for (const page of availablePages) {
     for (const key of createPageReferenceKeys(page)) {
-      if (referenceMap.has(key) && referenceMap.get(key).slug !== page.slug) {
+      if (
+        pageReferenceMap.has(key) &&
+        pageReferenceMap.get(key).slug !== page.slug
+      ) {
         throw new Error(`Ambiguous page selector key: ${key}`)
       }
 
-      referenceMap.set(key, page)
+      pageReferenceMap.set(key, page)
+    }
+  }
+
+  for (const group of getAllGroups()) {
+    const groupPages = availablePages.filter(
+      (page) =>
+        page.groupSlug === group.slug && availablePageSlugs.has(page.slug)
+    )
+
+    if (groupPages.length === 0) {
+      continue
+    }
+
+    for (const key of createGroupReferenceKeys(group)) {
+      if (
+        groupReferenceMap.has(key) &&
+        groupReferenceMap.get(key).slug !== group.slug
+      ) {
+        throw new Error(`Ambiguous group selector key: ${key}`)
+      }
+
+      groupReferenceMap.set(key, group)
     }
   }
 
@@ -96,13 +130,24 @@ export function resolvePageSelectors(selectors, availablePages = pages) {
 
   for (const selector of selectors) {
     const key = normalizeSelector(selector)
-    const page = referenceMap.get(key)
+    const page = pageReferenceMap.get(key)
 
-    if (!page) {
-      throw new Error(`Unknown page selector: ${selector}`)
+    if (page) {
+      selectedSlugs.add(page.slug)
+      continue
     }
 
-    selectedSlugs.add(page.slug)
+    const group = groupReferenceMap.get(key)
+
+    if (!group) {
+      throw new Error(`Unknown page/group selector: ${selector}`)
+    }
+
+    for (const pageSlug of group.pageSlugs) {
+      if (availablePageSlugs.has(pageSlug)) {
+        selectedSlugs.add(pageSlug)
+      }
+    }
   }
 
   return availablePages.filter((page) => selectedSlugs.has(page.slug))
