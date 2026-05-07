@@ -1,6 +1,6 @@
 <template>
   <div class="page-1">
-    <h2>page1 996</h2>
+    <h2>page1</h2>
 
     <div class="params-section">
       <h3>从基座接收的全局参数:</h3>
@@ -36,7 +36,6 @@
     </div>
 
     <p class="update-time">修改时间: {{ currentTime }}</p>
-    <p class="update-flag">本次验证文案: page1 build replacement OK</p>
   </div>
 </template>
 
@@ -142,11 +141,5 @@ const updateVersion = () => {
 .update-time {
   color: #999;
   font-size: 12px;
-}
-
-.update-flag {
-  margin-top: 8px;
-  color: #1f6feb;
-  font-weight: 600;
 }
 </style>

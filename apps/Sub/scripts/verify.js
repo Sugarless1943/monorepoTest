@@ -172,16 +172,7 @@ export async function verifySub(rawArgs = process.argv.slice(2)) {
       .join(', ')})`
   )
 
-  await run(
-    'node',
-    [
-      './scripts/build.js',
-      '--profile',
-      profile.id,
-      ...targetPages.map((page) => page.slug),
-    ],
-    subDir
-  )
+  await run('node', ['./scripts/build.js', '--profile', profile.id], subDir)
 
   await run(
     'node',

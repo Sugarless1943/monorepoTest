@@ -7,7 +7,7 @@ const upperCaseText = toUpperCase('hello world')
 </script>
 
 <template>
-  <div class="demo-page">
+  <div class="home-page">
     <div class="source-block">
       <header>@monorepo/components</header>
       <main>
@@ -26,7 +26,7 @@ const upperCaseText = toUpperCase('hello world')
 </template>
 
 <style scoped>
-.demo-page {
+.home-page {
   display: flex;
   flex-direction: column;
   align-items: center;

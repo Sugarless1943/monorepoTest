@@ -12,7 +12,7 @@
   },
   "scripts": {
     "start": "cd apps/Sub && pnpm dev",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pnpm run verify:fast",
     "build": "node ./scripts/build.js",
     "build:sub": "cd apps/Sub && pnpm build",
     "build:groupA": "node ./scripts/build.js group-a",

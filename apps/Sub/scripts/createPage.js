@@ -164,7 +164,6 @@ function renderGroupPackageJson(packageName) {
         './.imports/createSubPageViteConfig.js',
     },
     scripts: {
-      test: 'echo "Error: no test specified" && exit 1',
       build:
         'node ../../node_modules/vite/bin/vite.js build --config vite.config.js',
     },
@@ -211,12 +210,13 @@ function renderGroupPackageIndex(pages) {
 function renderPageComponent({ slug, displayTitle, pascalName }) {
   return `<script setup>
 const title = ${JSON.stringify(displayTitle)}
+const description = ${JSON.stringify(`${pascalName} content.`)}
 </script>
 
 <template>
   <section class="${slug}">
     <h2>{{ title }}</h2>
-    <p>${pascalName} scaffold created successfully.</p>
+    <p>{{ description }}</p>
   </section>
 </template>
 

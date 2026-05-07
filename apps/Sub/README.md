@@ -1,6 +1,6 @@
 # Sub Host
 
-`Sub` 是当前 demo 的基座 host，负责：
+`Sub` 是当前工程的基座 host，负责：
 
 - 路由入口
 - 布局容器

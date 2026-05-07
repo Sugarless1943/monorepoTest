@@ -9,7 +9,6 @@
     "#tooling/createSubPageViteConfig.js": "./.imports/createSubPageViteConfig.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "node ../../node_modules/vite/bin/vite.js build --config vite.config.js"
   },
   "keywords": [],

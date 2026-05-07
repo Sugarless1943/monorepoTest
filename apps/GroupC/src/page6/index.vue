@@ -5,7 +5,7 @@ const title = 'page6'
 <template>
   <section class="page-6">
     <h2>{{ title }}</h2>
-    <p>page6 scaffold created successfully.</p>
+    <p>page6 content.</p>
   </section>
 </template>
 
