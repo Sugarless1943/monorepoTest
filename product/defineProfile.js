@@ -1,9 +1,9 @@
-function normalizePages(pages) {
-  if (!pages) {
+function normalizeList(values) {
+  if (!values) {
     return undefined
   }
 
-  return [...new Set(pages.filter(Boolean))]
+  return [...new Set(values.filter(Boolean))]
 }
 
 export function defineProfile(id, options = {}) {
@@ -11,11 +11,16 @@ export function defineProfile(id, options = {}) {
     throw new Error('Profile id is required')
   }
 
+  if (options.pages && options.groups) {
+    throw new Error(`Profile ${id} cannot define both pages and groups`)
+  }
+
   return Object.freeze({
     id,
     extends: options.extends ?? null,
     displayName: options.displayName ?? null,
-    pages: normalizePages(options.pages),
+    pages: normalizeList(options.pages),
+    groups: normalizeList(options.groups),
     runtimeConfig: Object.freeze({ ...(options.runtimeConfig ?? {}) }),
   })
 }

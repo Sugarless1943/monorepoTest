@@ -43,7 +43,10 @@ export async function runExport(rawArgs = process.argv.slice(2)) {
   await mkdir(exportDir, { recursive: true })
 
   const selectedAppDirs = [
-    ...new Set(['apps/Sub', ...plan.pages.map((page) => page.appDir)]),
+    ...new Set([
+      'apps/Sub',
+      ...plan.profile.groups.map((group) => group.appDir),
+    ]),
   ]
   const packageDirs = await collectExportPackageDirs({
     repoDir,

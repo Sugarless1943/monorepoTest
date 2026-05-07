@@ -19,16 +19,31 @@ export function renderPagesIndex(selectedPages, groups = []) {
       (group) => `{
   slug: ${JSON.stringify(group.slug)},
   title: ${JSON.stringify(group.title)},
-  pageSlugs: ${formatArray(group.pageSlugs)},
+  order: ${group.order ?? 0},
+  pageSlugs: ${formatArray(group.pages.map((page) => page.slug))},
   chunkFileName: ${JSON.stringify(group.chunkFileName ?? `${group.slug}.js`)},
+  appDir: ${JSON.stringify(group.appDir)},
+  packageName: ${JSON.stringify(group.packageName)},
 }`
     )
     .join(',\n')
 
   return `${imports}
 
-const pages = [${pageList}]
+const rawPages = [${pageList}]
 const groups = [${groupList}]
+
+const groupsBySlug = Object.freeze(
+  Object.fromEntries(groups.map((group) => [group.slug, group]))
+)
+const pages = rawPages.map((page) => {
+  const group = groupsBySlug[page.groupSlug]
+  return Object.freeze({
+    ...page,
+    appDir: group?.appDir ?? page.appDir,
+    packageName: group?.packageName ?? page.packageName,
+  })
+})
 
 function normalizeSelector(value) {
   return String(value ?? '')
@@ -81,8 +96,21 @@ const pagesBySlug = Object.freeze(
   Object.fromEntries(pages.map((page) => [page.slug, page]))
 )
 
+function sortGroups(targetGroups) {
+  return targetGroups
+    .slice()
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.slug.localeCompare(right.slug)
+    )
+}
+
 export function getAllPages() {
   return pages.slice()
+}
+
+export function getAllGroups() {
+  return sortGroups(groups)
 }
 
 export function getPage(slug) {
@@ -93,6 +121,20 @@ export function getPage(slug) {
   }
 
   return page
+}
+
+export function getGroup(slug) {
+  const group = groupsBySlug[slug]
+
+  if (!group) {
+    throw new Error(\`Unknown group slug: \${slug}\`)
+  }
+
+  return group
+}
+
+export function listGroupAssetFileNames(targetGroups = groups) {
+  return targetGroups.map((group) => group.chunkFileName)
 }
 
 export function listPageAssetFileNames(targetPages = pages) {
@@ -178,7 +220,7 @@ export function resolvePageSelectors(selectors, availablePages = pages) {
   return availablePages.filter((page) => selectedSlugs.has(page.slug))
 }
 
-export { pages, pagesBySlug }
+export { groups, groupsBySlug, pages, pagesBySlug }
 `
 }
 
@@ -186,8 +228,13 @@ export function renderLeafProductIndex() {
   return `export { toCamelCase, toPascalCase } from './case.js'
 export { definePage } from './definePage.js'
 export {
+  getAllGroups,
   getAllPages,
+  getGroup,
   getPage,
+  groups,
+  groupsBySlug,
+  listGroupAssetFileNames,
   listPageAssetFileNames,
   pages,
   pagesBySlug,
@@ -207,8 +254,10 @@ export {
 
 export function renderLeafResolver(displayName, pageSlugs) {
   return `import {
+  getAllGroups,
   getPage,
-  listPageAssetFileNames,
+  getGroup,
+  listGroupAssetFileNames,
   resolvePageSelectors,
 } from './pages/index.js'
 
@@ -235,16 +284,86 @@ function sortPages(pages) {
     )
 }
 
-function createResolvedProfile({ id, displayName, runtimeConfig, pages }) {
-  const pageSlugs = pages.map((page) => page.slug)
+function sortGroups(groups) {
+  return groups
+    .slice()
+    .sort(
+      (left, right) =>
+        left.order - right.order || left.slug.localeCompare(right.slug)
+    )
+}
+
+function flattenGroupedPages(groups) {
+  return sortPages(groups.flatMap((group) => group.pages))
+}
+
+function applyGroupDefaults(page, group) {
+  return Object.freeze({
+    ...page,
+    appDir: group.appDir,
+    packageName: group.packageName,
+  })
+}
+
+function resolveGroupsForPages(pages) {
+  const selectedPageSlugs = new Set(pages.map((page) => page.slug))
+  const groupedPageSlugs = new Set()
+  const groups = []
+
+  for (const group of sortGroups(getAllGroups())) {
+    const resolvedPages = sortPages(
+      group.pageSlugs
+        .map((pageSlug) => getPage(pageSlug))
+        .filter((page) => selectedPageSlugs.has(page.slug))
+    )
+
+    if (resolvedPages.length === 0) {
+      continue
+    }
+
+    for (const page of resolvedPages) {
+      if (page.groupSlug !== group.slug) {
+        throw new Error(
+          \`Page \${page.slug} is assigned to \${page.groupSlug}, but group \${group.slug} includes it\`
+        )
+      }
+
+      groupedPageSlugs.add(page.slug)
+    }
+
+    groups.push({
+      ...group,
+      pages: resolvedPages.map((page) => applyGroupDefaults(page, group)),
+    })
+  }
+
+  for (const page of pages) {
+    if (!getGroup(page.groupSlug)) {
+      throw new Error(
+        \`Unknown group slug for page \${page.slug}: \${page.groupSlug}\`
+      )
+    }
+
+    if (!groupedPageSlugs.has(page.slug)) {
+      throw new Error(\`Page \${page.slug} is not registered in its group\`)
+    }
+  }
+
+  return groups
+}
+
+function createResolvedProfile({ id, displayName, runtimeConfig, pages, groups }) {
+  const resolvedPages = groups?.length ? flattenGroupedPages(groups) : pages
+  const pageSlugs = resolvedPages.map((page) => page.slug)
 
   return {
     id,
     displayName,
     runtimeConfig,
     pageSlugs,
-    pages,
-    menus: pages
+    pages: resolvedPages,
+    groups,
+    menus: resolvedPages
       .filter((page) => page.visibleInMenu)
       .map((page) => ({
         slug: page.slug,
@@ -252,7 +371,7 @@ function createResolvedProfile({ id, displayName, runtimeConfig, pages }) {
         routeName: page.routeName,
         label: page.menuLabel,
       })),
-    legacyRoutes: pages.flatMap((page) =>
+    legacyRoutes: resolvedPages.flatMap((page) =>
       page.aliases.map((legacyPath) => ({
         slug: page.slug,
         path: legacyPath,
@@ -330,12 +449,14 @@ export function resolveProfile(profileId = 'default') {
     ...profileDefinition.runtimeConfig,
     brandName: profileDefinition.runtimeConfig.brandName ?? displayName,
   }
+  const groups = resolveGroupsForPages(pages)
 
   return createResolvedProfile({
     id: profileDefinition.id,
     displayName,
     runtimeConfig,
     pages,
+    groups,
   })
 }
 
@@ -353,6 +474,7 @@ export function resolveActiveProfile({
     displayName: profile.displayName,
     runtimeConfig: profile.runtimeConfig,
     pages,
+    groups: resolveGroupsForPages(pages),
   })
 }
 
@@ -360,14 +482,32 @@ export function resolveBuildPlan({
   profileId = 'default',
   selectors = [],
 } = {}) {
-  const profile = resolveActiveProfile({ profileId, selectors })
-  const pages = profile.pages
+  const activeProfile = resolveActiveProfile({ profileId, selectors })
+  const selectedGroupSlugs = new Set(
+    activeProfile.groups.map((group) => group.slug)
+  )
+  const fullProfile = resolveProfile(profileId)
+  const groups = fullProfile.groups.filter((group) =>
+    selectedGroupSlugs.has(group.slug)
+  )
+  const pages = flattenGroupedPages(groups)
+  const profile = createResolvedProfile({
+    id: fullProfile.id,
+    displayName: fullProfile.displayName,
+    runtimeConfig: fullProfile.runtimeConfig,
+    pages,
+    groups,
+  })
 
   return {
     profile,
     pages,
+    groups: profile.groups,
     pageSlugs: pages.map((page) => page.slug),
-    assetFileNames: listPageAssetFileNames(pages),
+    groupSlugs: profile.groups.map((group) => group.slug),
+    appDirs: profile.groups.map((group) => group.appDir),
+    packageNames: profile.groups.map((group) => group.packageName),
+    assetFileNames: listGroupAssetFileNames(profile.groups),
   }
 }
 

@@ -24,8 +24,74 @@ function sortPages(pages) {
     )
 }
 
+function normalizeSelector(value) {
+  return String(value ?? '')
+    .trim()
+    .replace(/^\/+/, '')
+    .replace(/\.js$/i, '')
+    .toLowerCase()
+}
+
+function uniqueValues(values) {
+  return [...new Set(values.filter(Boolean))]
+}
+
+function createGroupReferenceKeys(group) {
+  return uniqueValues(
+    [group.slug, group.title, group.slug.replace(/-/g, '')].map(
+      normalizeSelector
+    )
+  )
+}
+
 function flattenGroupedPages(groups) {
   return sortPages(groups.flatMap((group) => group.pages))
+}
+
+function resolveGroupSelectors(selectors, availableGroups = getAllGroups()) {
+  if (!selectors?.length) {
+    return sortGroups(availableGroups)
+  }
+
+  const groupReferenceMap = new Map()
+
+  for (const group of availableGroups) {
+    for (const key of createGroupReferenceKeys(group)) {
+      if (
+        groupReferenceMap.has(key) &&
+        groupReferenceMap.get(key).slug !== group.slug
+      ) {
+        throw new Error(`Ambiguous group selector key: ${key}`)
+      }
+
+      groupReferenceMap.set(key, group)
+    }
+  }
+
+  const selectedSlugs = new Set()
+
+  for (const selector of selectors) {
+    const key = normalizeSelector(selector)
+    const group = groupReferenceMap.get(key)
+
+    if (!group) {
+      throw new Error(`Unknown group selector: ${selector}`)
+    }
+
+    selectedSlugs.add(group.slug)
+  }
+
+  return sortGroups(
+    availableGroups.filter((group) => selectedSlugs.has(group.slug))
+  )
+}
+
+function applyGroupDefaults(page, group) {
+  return Object.freeze({
+    ...page,
+    appDir: group.appDir,
+    packageName: group.packageName,
+  })
 }
 
 function resolveGroupsForPages(pages) {
@@ -56,7 +122,7 @@ function resolveGroupsForPages(pages) {
 
     groups.push({
       ...group,
-      pages: resolvedPages,
+      pages: resolvedPages.map((page) => applyGroupDefaults(page, group)),
     })
   }
 
@@ -82,16 +148,17 @@ function createResolvedProfile({
   pages,
   groups,
 }) {
-  const pageSlugs = pages.map((page) => page.slug)
+  const resolvedPages = groups?.length ? flattenGroupedPages(groups) : pages
+  const pageSlugs = resolvedPages.map((page) => page.slug)
 
   return {
     id,
     displayName,
     runtimeConfig,
     pageSlugs,
-    pages,
+    pages: resolvedPages,
     groups,
-    menus: pages
+    menus: resolvedPages
       .filter((page) => page.visibleInMenu)
       .map((page) => ({
         slug: page.slug,
@@ -99,7 +166,7 @@ function createResolvedProfile({
         routeName: page.routeName,
         label: page.menuLabel,
       })),
-    legacyRoutes: pages.flatMap((page) =>
+    legacyRoutes: resolvedPages.flatMap((page) =>
       page.aliases.map((legacyPath) => ({
         slug: page.slug,
         path: legacyPath,
@@ -136,7 +203,8 @@ function mergeProfiles(profileId) {
     (result, profile) => ({
       id: profileId,
       displayName: profile.displayName ?? result.displayName,
-      pages: profile.pages ?? result.pages,
+      pages: profile.groups ? undefined : (profile.pages ?? result.pages),
+      groups: profile.pages ? undefined : (profile.groups ?? result.groups),
       runtimeConfig: {
         ...result.runtimeConfig,
         ...profile.runtimeConfig,
@@ -146,6 +214,7 @@ function mergeProfiles(profileId) {
       id: profileId,
       displayName: null,
       pages: undefined,
+      groups: undefined,
       runtimeConfig: {},
     }
   )
@@ -192,8 +261,11 @@ function assertUniquePageFields(pages, profileId) {
 
 export function resolveProfile(profileId = 'default') {
   const mergedProfile = mergeProfiles(profileId)
-  const configuredPageSlugs =
-    mergedProfile.pages ?? getAllPages().map((page) => page.slug)
+  const configuredPageSlugs = mergedProfile.groups
+    ? resolveGroupSelectors(mergedProfile.groups).flatMap(
+        (group) => group.pageSlugs
+      )
+    : (mergedProfile.pages ?? getAllPages().map((page) => page.slug))
   const pages = sortPages(
     configuredPageSlugs.map((pageSlug) => getPage(pageSlug))
   )
@@ -263,6 +335,8 @@ export function resolveBuildPlan({
     groups: profile.groups,
     pageSlugs: pages.map((page) => page.slug),
     groupSlugs: profile.groups.map((group) => group.slug),
+    appDirs: profile.groups.map((group) => group.appDir),
+    packageNames: profile.groups.map((group) => group.packageName),
     assetFileNames: listGroupAssetFileNames(profile.groups),
   }
 }
@@ -288,6 +362,7 @@ export function resolveExportPlan({
       projectSlug: resolvedProjectSlug,
       displayName: resolvedDisplayName,
       pages: profile.pageSlugs,
+      groups: profile.groups.map((group) => group.slug),
     },
   }
 }

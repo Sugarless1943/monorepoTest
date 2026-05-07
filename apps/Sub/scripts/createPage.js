@@ -182,8 +182,8 @@ function renderGroupPackageViteConfig(group) {
   return `import { getAllPages } from '#product'
 import { createSubGroupViteConfig } from '#tooling/createSubPageViteConfig.js'
 
-const pages = getAllPages().filter((page) => page.appDir === ${JSON.stringify(
-    group.appDir
+const pages = getAllPages().filter((page) => page.groupSlug === ${JSON.stringify(
+    group.slug
   )})
 
 export default createSubGroupViteConfig({
@@ -242,8 +242,6 @@ function renderPageDefinition({
   groupSlug,
   displayTitle,
   order,
-  packageName,
-  appDir,
   entryFile,
   componentFile,
 }) {
@@ -253,8 +251,6 @@ export default definePage(${JSON.stringify(slug)}, {
   groupSlug: ${JSON.stringify(groupSlug)},
   title: ${JSON.stringify(displayTitle)},
   order: ${order},
-  packageName: ${JSON.stringify(packageName)},
-  appDir: ${JSON.stringify(appDir)},
   entryFile: ${JSON.stringify(entryFile)},
   componentFile: ${JSON.stringify(componentFile)},
 })
@@ -369,8 +365,6 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
       groupSlug: options.groupSlug,
       displayTitle,
       order,
-      packageName,
-      appDir: group.appDir,
       entryFile,
       componentFile,
     })

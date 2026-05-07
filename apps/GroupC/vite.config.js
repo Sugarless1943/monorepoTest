@@ -1,7 +1,7 @@
 import { getAllPages } from '#product'
 import { createSubGroupViteConfig } from '#tooling/createSubPageViteConfig.js'
 
-const pages = getAllPages().filter((page) => page.appDir === 'apps/GroupC')
+const pages = getAllPages().filter((page) => page.groupSlug === 'group-c')
 
 export default createSubGroupViteConfig({
   appDir: __dirname,
