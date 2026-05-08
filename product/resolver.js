@@ -44,8 +44,63 @@ function createGroupReferenceKeys(group) {
   )
 }
 
+function createPageReferenceKeys(page) {
+  return uniqueValues(
+    [
+      page.slug,
+      page.camelName,
+      page.pascalName,
+      page.routeName,
+      page.routePath,
+      page.slug.replace(/-/g, ''),
+    ].map(normalizeSelector)
+  )
+}
+
 function flattenGroupedPages(groups) {
   return sortPages(groups.flatMap((group) => group.pages))
+}
+
+function isTemporaryGroup(group) {
+  return group.temporary === true
+}
+
+function getDeliveryGroups() {
+  return getAllGroups().filter((group) => !isTemporaryGroup(group))
+}
+
+function assertNoTemporarySelectors(selectors) {
+  if (!selectors?.length) {
+    return
+  }
+
+  const temporaryReferenceKeys = new Map()
+
+  for (const group of getAllGroups().filter(isTemporaryGroup)) {
+    for (const key of createGroupReferenceKeys(group)) {
+      temporaryReferenceKeys.set(key, group)
+    }
+  }
+
+  for (const page of getAllPages().filter((page) =>
+    isTemporaryGroup(getGroup(page.groupSlug))
+  )) {
+    for (const key of createPageReferenceKeys(page)) {
+      temporaryReferenceKeys.set(key, page)
+    }
+  }
+
+  for (const selector of selectors) {
+    const temporaryItem = temporaryReferenceKeys.get(
+      normalizeSelector(selector)
+    )
+
+    if (temporaryItem) {
+      throw new Error(
+        `Temporary selector ${selector} is dev-only and cannot be used in build/export`
+      )
+    }
+  }
 }
 
 function resolveGroupSelectors(selectors, availableGroups = getAllGroups()) {
@@ -94,12 +149,15 @@ function applyGroupDefaults(page, group) {
   })
 }
 
-function resolveGroupsForPages(pages) {
+function resolveGroupsForPages(pages, { includeTemporary = false } = {}) {
   const selectedPageSlugs = new Set(pages.map((page) => page.slug))
   const groupedPageSlugs = new Set()
   const groups = []
+  const availableGroups = includeTemporary
+    ? getAllGroups()
+    : getDeliveryGroups()
 
-  for (const group of sortGroups(getAllGroups())) {
+  for (const group of sortGroups(availableGroups)) {
     const resolvedPages = sortPages(
       group.pageSlugs
         .map((pageSlug) => getPage(pageSlug))
@@ -262,10 +320,13 @@ function assertUniquePageFields(pages, profileId) {
 export function resolveProfile(profileId = 'default') {
   const mergedProfile = mergeProfiles(profileId)
   const configuredPageSlugs = mergedProfile.groups
-    ? resolveGroupSelectors(mergedProfile.groups).flatMap(
+    ? resolveGroupSelectors(mergedProfile.groups, getDeliveryGroups()).flatMap(
         (group) => group.pageSlugs
       )
-    : (mergedProfile.pages ?? getAllPages().map((page) => page.slug))
+    : (mergedProfile.pages ??
+      getAllPages()
+        .filter((page) => !isTemporaryGroup(getGroup(page.groupSlug)))
+        .map((page) => page.slug))
   const pages = sortPages(
     configuredPageSlugs.map((pageSlug) => getPage(pageSlug))
   )
@@ -292,12 +353,21 @@ export function resolveProfile(profileId = 'default') {
 export function resolveActiveProfile({
   profileId = 'default',
   selectors = [],
+  includeTemporary = false,
 } = {}) {
   const profile = resolveProfile(profileId)
-  const pages = selectors.length
-    ? resolvePageSelectors(selectors, profile.pages)
+  const availablePages = includeTemporary
+    ? sortPages([
+        ...profile.pages,
+        ...getAllPages().filter((page) =>
+          isTemporaryGroup(getGroup(page.groupSlug))
+        ),
+      ])
     : profile.pages
-  const groups = resolveGroupsForPages(pages)
+  const pages = selectors.length
+    ? resolvePageSelectors(selectors, availablePages)
+    : availablePages
+  const groups = resolveGroupsForPages(pages, { includeTemporary })
 
   return createResolvedProfile({
     id: profile.id,
@@ -312,6 +382,7 @@ export function resolveBuildPlan({
   profileId = 'default',
   selectors = [],
 } = {}) {
+  assertNoTemporarySelectors(selectors)
   const activeProfile = resolveActiveProfile({ profileId, selectors })
   const selectedGroupSlugs = new Set(
     activeProfile.groups.map((group) => group.slug)

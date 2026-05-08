@@ -14,6 +14,7 @@
     "build:groupB": "node ./scripts/build.js group-b",
     "build:groupC": "node ./scripts/build.js group-c",
     "create:page": "node ./scripts/createPage.js",
+    "move:page": "node ./scripts/movePage.js",
     "check:dist": "node ./scripts/check-dist.js",
     "verify": "node ./scripts/verify.js",
     "preview": "vite preview",

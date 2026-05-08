@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { getAllPages, getGroup, toPascalCase } from '#product'
@@ -14,6 +14,10 @@ function toPosixPath(value) {
 function toModulePath(fromDir, targetPath) {
   const relativePath = toPosixPath(path.relative(fromDir, targetPath))
   return relativePath.startsWith('.') ? relativePath : `./${relativePath}`
+}
+
+function formatString(value) {
+  return `'${String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
 async function resolveProductDir() {
@@ -35,6 +39,7 @@ Examples:
 
   pnpm create:page -- page-7 --group group-c
   pnpm create:page -- page-8 --group group-c --title "page8" --order 80
+  pnpm create:page -- draft-page --group temp
 `)
 }
 
@@ -199,12 +204,38 @@ function renderGroupPackageIndex(pages) {
       const exportPath = entryFile
         .replace(/^src\//, './')
         .replace(/\/index\.ts$/, '/index')
-      return `export { default as ${page.moduleExportName} } from ${JSON.stringify(
+      return `export { default as ${page.moduleExportName} } from ${formatString(
         exportPath
       )}`
     })
     .join('\n')}
 `
+}
+
+function renderGroupDefinition(group, pageSlugs) {
+  const lines = [
+    "import { defineGroup } from '../defineGroup.js'",
+    '',
+    `export default defineGroup(${formatString(group.slug)}, {`,
+    `  title: ${formatString(group.title)},`,
+    `  order: ${group.order ?? 0},`,
+    `  pageSlugs: [${pageSlugs.map((slug) => formatString(slug)).join(', ')}],`,
+  ]
+
+  if (group.chunkFileName !== `${group.slug}.js`) {
+    lines.push(`  chunkFileName: ${formatString(group.chunkFileName)},`)
+  }
+
+  lines.push(`  appDir: ${formatString(group.appDir)},`)
+  lines.push(`  packageName: ${formatString(group.packageName)},`)
+
+  if (group.temporary) {
+    lines.push('  temporary: true,')
+  }
+
+  lines.push('})', '')
+
+  return lines.join('\n')
 }
 
 function renderPageComponent({ slug, displayTitle, pascalName }) {
@@ -247,12 +278,12 @@ function renderPageDefinition({
 }) {
   return `import { definePage } from '../definePage.js'
 
-export default definePage(${JSON.stringify(slug)}, {
-  groupSlug: ${JSON.stringify(groupSlug)},
-  title: ${JSON.stringify(displayTitle)},
+export default definePage(${formatString(slug)}, {
+  groupSlug: ${formatString(groupSlug)},
+  title: ${formatString(displayTitle)},
   order: ${order},
-  entryFile: ${JSON.stringify(entryFile)},
-  componentFile: ${JSON.stringify(componentFile)},
+  entryFile: ${formatString(entryFile)},
+  componentFile: ${formatString(componentFile)},
 })
 `
 }
@@ -267,6 +298,75 @@ async function validateGeneratedPage(pageDefinitionPath) {
   await import(pageDefinitionUrl)
 }
 
+function registerPageInPagesIndex(source, page) {
+  const importName = page.moduleExportName
+  const importLine = `import ${importName} from './${page.slug}.js'`
+
+  if (source.includes(importLine)) {
+    throw new Error(`Page ${page.slug} is already registered in pages/index.js`)
+  }
+
+  if (!source.includes('\nimport { getAllGroups')) {
+    throw new Error('Cannot find product/pages/index.js import anchor')
+  }
+
+  const withImport = source.replace(
+    '\nimport { getAllGroups',
+    `\n${importLine}\n\nimport { getAllGroups`
+  )
+  const pagesPattern = /const pages = \[([^\]]*)\]/
+  const pagesMatch = withImport.match(pagesPattern)
+
+  if (!pagesMatch) {
+    throw new Error('Cannot find product/pages/index.js pages array')
+  }
+
+  const pageImports = pagesMatch[1]
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (pageImports.includes(importName)) {
+    throw new Error(`Page import ${importName} is already in pages array`)
+  }
+
+  return withImport.replace(
+    pagesPattern,
+    `const pages = [${[...pageImports, importName].join(', ')}]`
+  )
+}
+
+async function createTemporaryRegistrationPlan({ productDir, group, page }) {
+  const pagesIndexPath = path.resolve(productDir, 'pages/index.js')
+  const groupPath = path.resolve(productDir, 'groups', `${group.slug}.js`)
+
+  if (!(await pathExists(pagesIndexPath))) {
+    throw new Error(
+      `Missing pages index: ${toPosixPath(path.relative(repoDir, pagesIndexPath))}`
+    )
+  }
+
+  if (!(await pathExists(groupPath))) {
+    throw new Error(
+      `Missing group definition: ${toPosixPath(path.relative(repoDir, groupPath))}`
+    )
+  }
+
+  const pageSlugs = group.pageSlugs.includes(page.slug)
+    ? group.pageSlugs
+    : [...group.pageSlugs, page.slug]
+
+  return {
+    pagesIndexPath,
+    pagesIndexSource: registerPageInPagesIndex(
+      await readFile(pagesIndexPath, 'utf8'),
+      page
+    ),
+    groupPath,
+    groupSource: renderGroupDefinition(group, pageSlugs),
+  }
+}
+
 export async function createPage(rawArgs = process.argv.slice(2)) {
   const options = parseArgs(rawArgs)
   const existingPages = getAllPages()
@@ -278,6 +378,9 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
 
   const pascalName = toPascalCase(options.slug)
   const pageDirName = options.slug.replace(/-/g, '')
+  const moduleExportName = options.slug.replace(/-([a-z0-9])/g, (_, char) =>
+    char.toUpperCase()
+  )
   const packageName = group.packageName
   const displayTitle = options.title || pascalName
   const order = options.order ?? getNextOrder(existingPages)
@@ -308,6 +411,17 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
       )}`
     )
   }
+
+  const temporaryRegistration = group.temporary
+    ? await createTemporaryRegistrationPlan({
+        productDir,
+        group,
+        page: {
+          slug: options.slug,
+          moduleExportName,
+        },
+      })
+    : null
 
   await mkdir(appDir, { recursive: true })
 
@@ -340,9 +454,7 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
       })),
     {
       entryFile,
-      moduleExportName: options.slug.replace(/-([a-z0-9])/g, (_, char) =>
-        char.toUpperCase()
-      ),
+      moduleExportName,
     },
   ].sort((left, right) => left.entryFile.localeCompare(right.entryFile))
   await writeTextFile(
@@ -371,6 +483,17 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   )
   await validateGeneratedPage(pageDefinitionPath)
 
+  if (temporaryRegistration) {
+    await writeFile(
+      temporaryRegistration.pagesIndexPath,
+      temporaryRegistration.pagesIndexSource
+    )
+    await writeFile(
+      temporaryRegistration.groupPath,
+      temporaryRegistration.groupSource
+    )
+  }
+
   const relativePageDefinitionPath = toPosixPath(
     path.relative(repoDir, pageDefinitionPath)
   )
@@ -382,6 +505,13 @@ export async function createPage(rawArgs = process.argv.slice(2)) {
   console.log(`  title: ${displayTitle}`)
   console.log(`  order: ${order}`)
   console.log('')
+
+  if (group.temporary) {
+    console.log('Temporary page registered for dev')
+    console.log('Move it to a delivery group before build/export')
+    return
+  }
+
   console.log('Next steps:')
   console.log(
     `  1. Register ${options.slug} in ${toPosixPath(

@@ -4,10 +4,11 @@ import page3 from './page-3.js'
 import page4 from './page-4.js'
 import page5 from './page-5.js'
 import page6 from './page-6.js'
+import tempPage from './temp-page.js'
 
 import { getAllGroups, getGroup } from '../groups/index.js'
 
-const pages = [page1, page2, page3, page4, page5, page6]
+const pages = [page1, page2, page3, page4, page5, page6, tempPage]
 
 function normalizeSelector(value) {
   return String(value ?? '')

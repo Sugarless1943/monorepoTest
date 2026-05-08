@@ -1,8 +1,9 @@
 import groupA from './group-a.js'
 import groupB from './group-b.js'
 import groupC from './group-c.js'
+import temp from './temp.js'
 
-const groups = [groupA, groupB, groupC]
+const groups = [groupA, groupB, groupC, temp]
 
 function assertUniqueGroups() {
   const seenSlugs = new Set()

@@ -17,5 +17,6 @@ export function defineGroup(slug, options = {}) {
     chunkFileName: options.chunkFileName ?? `${slug}.js`,
     appDir: options.appDir ?? `apps/${toPascalCase(options.title ?? slug)}`,
     packageName: options.packageName ?? `@monorepo/${slug}`,
+    temporary: options.temporary ?? false,
   })
 }

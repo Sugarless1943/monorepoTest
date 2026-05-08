@@ -20,6 +20,7 @@ export const activeProductPageSlugs = parseSelectedPageSlugs(
 export const productProfile = resolveActiveProfile({
   profileId: activeProductProfileId,
   selectors: activeProductPageSlugs,
+  includeTemporary: import.meta.env.DEV,
 })
 export const productGroups = productProfile.groups
 export const productPages = productProfile.pages

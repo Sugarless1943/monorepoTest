@@ -26,11 +26,29 @@ pnpm create:page -- page-7 --group group-c
 
 这个命令只会生成 page 骨架和 `product/pages/page-7.js`，不会自动改 `product/pages/index.js`、group 定义或任何 profile。
 
+未确定最终归属的页面可以先创建到 `temp` group：
+
+```bash
+pnpm create:page -- draft-page --group temp
+```
+
+这个命令会生成 page 骨架、注册 `product/pages/index.js`、加入 `product/groups/temp.js`，并更新 `apps/Temp/src/index.ts`。`temp` group 只服务 dev 环境：`pnpm dev` 默认可见，正式 `build`、`export` 和 `build:groupX` 都不会包含它。
+
+页面确定归属后，可以在 `apps/Sub` 中迁移：
+
+```bash
+pnpm move:page -- draft-page --from temp --to group-a
+pnpm move:page -- draft-page --to group-a
+```
+
+`move:page` 一次只迁移一个页面；`--from` 是可选安全校验，传入时必须和页面当前 group 一致。迁移脚本会移动源码目录，更新 `product/pages/<page>.js`，更新两个 group 的 `pageSlugs`，并重写来源和目标 app 的 `src/index.ts`。
+
 这些和交付工程直接相关的能力现在都在 `apps/Sub/scripts` 下，例如：
 
 - `apps/Sub/scripts/build.js`
 - `apps/Sub/scripts/check-dist.js`
 - `apps/Sub/scripts/createPage.js`
+- `apps/Sub/scripts/movePage.js`
 - `apps/Sub/scripts/verify.js`
 
 如果当前是在主仓里，确实想验证某个特定 profile，也可以额外传 `--profile customer-a` 这类参数；但导出工程一般只需要直接执行 `pnpm verify`，因为它默认只保留当前交付工程自己的 `default` profile。
