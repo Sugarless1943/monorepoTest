@@ -64,6 +64,7 @@ async function getAvailablePort() {
 
 async function waitForUrl(url, timeoutMs = 15000) {
   const deadline = Date.now() + timeoutMs
+  let lastError
 
   while (Date.now() < deadline) {
     try {
@@ -79,14 +80,16 @@ async function waitForUrl(url, timeoutMs = 15000) {
       ) {
         return response
       }
-    } catch {}
+    } catch (error) {
+      lastError = error
+    }
 
     await new Promise((resolve) => {
       setTimeout(resolve, 300)
     })
   }
 
-  throw new Error(`Timed out waiting for ${url}`)
+  throw new Error(`Timed out waiting for ${url}`, { cause: lastError })
 }
 
 async function assertPageResponse(url) {
@@ -107,6 +110,17 @@ async function assertPageResponse(url) {
   }
 }
 
+async function assertAssetResponse(url) {
+  const response = await waitForUrl(url)
+  const contentLength = Number.parseInt(response.headers['content-length'], 10)
+
+  if (Number.isInteger(contentLength) && contentLength <= 0) {
+    throw new Error(`Empty preview asset response for ${url}`)
+  }
+
+  response.resume()
+}
+
 function collectPreviewPaths({ profile, targetPages }) {
   const paths = ['/']
   const selectedPageSlugs = new Set(targetPages.map((page) => page.slug))
@@ -122,6 +136,15 @@ function collectPreviewPaths({ profile, targetPages }) {
   }
 
   return [...new Set(paths)]
+}
+
+function collectPreviewAssets({ profile }) {
+  return [
+    '/assets/index.js',
+    '/assets/vendor.js',
+    '/shared/vue-runtime.js',
+    ...profile.groups.map((group) => `/assets/${group.chunkFileName}`),
+  ]
 }
 
 async function verifyPreview({ subDir, profile, targetPages }) {
@@ -145,6 +168,10 @@ async function verifyPreview({ subDir, profile, targetPages }) {
   try {
     for (const routePath of collectPreviewPaths({ profile, targetPages })) {
       await assertPageResponse(`${baseUrl}${routePath}`)
+    }
+
+    for (const assetPath of collectPreviewAssets({ profile })) {
+      await assertAssetResponse(`${baseUrl}${assetPath}`)
     }
   } finally {
     previewProcess.kill('SIGTERM')
@@ -172,7 +199,11 @@ export async function verifySub(rawArgs = process.argv.slice(2)) {
       .join(', ')})`
   )
 
-  await run('node', ['./scripts/build.js', '--profile', profile.id], subDir)
+  await run(
+    'node',
+    ['./scripts/build.js', '--profile', profile.id, ...selectors],
+    subDir
+  )
 
   await run(
     'node',

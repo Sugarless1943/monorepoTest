@@ -27,6 +27,7 @@ function parseArgs(rawArgs) {
   const options = {
     fast: false,
     profileIds: [],
+    skipQuality: false,
   }
 
   for (let index = 0; index < rawArgs.length; index += 1) {
@@ -34,6 +35,11 @@ function parseArgs(rawArgs) {
 
     if (arg === '--fast') {
       options.fast = true
+      continue
+    }
+
+    if (arg === '--skip-quality') {
+      options.skipQuality = true
       continue
     }
 
@@ -70,6 +76,14 @@ function getTargetProfiles(options) {
   return profiles
 }
 
+async function verifyQualityGate(repoDir) {
+  console.log('\n=== Repo quality gate ===')
+
+  await run('pnpm', ['run', 'format:check'], repoDir)
+  await run('pnpm', ['run', 'lint'], repoDir)
+  await run('pnpm', ['run', 'typecheck'], repoDir)
+}
+
 export async function verifyRepo(rawArgs = process.argv.slice(2)) {
   const options = parseArgs(rawArgs)
   const repoDir = path.resolve(import.meta.dirname, '..')
@@ -77,6 +91,10 @@ export async function verifyRepo(rawArgs = process.argv.slice(2)) {
   const targetProfiles = getTargetProfiles(options)
 
   await rm(tempRootDir, { recursive: true, force: true })
+
+  if (!options.skipQuality) {
+    await verifyQualityGate(repoDir)
+  }
 
   for (const profile of targetProfiles) {
     console.log(`\n=== Repo verify: ${profile.id} ===`)

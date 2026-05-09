@@ -53,7 +53,11 @@ try {
       )
       .map((file) => rm(path.join(assetsDir, file), { force: true }))
   )
-} catch {}
+} catch (error) {
+  if (error?.code !== 'ENOENT') {
+    throw error
+  }
+}
 
 if (isFullBuild) {
   await run('pnpm', ['exec', 'vite', 'build'], subDir, {

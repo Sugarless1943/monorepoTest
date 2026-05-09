@@ -1,4 +1,8 @@
 node_modules
 dist
+dists
+exports
+.tmp
+**/dist
+**/dist-test
 pnpm-lock.yaml
-**/.git/**

@@ -23,7 +23,11 @@ export function subPageBuildPlugin({ chunkFileName, outDir, cssFileName }) {
 
         jsSource = `${injectCode}\n${jsSource}`
         await rm(cssPath, { force: true })
-      } catch {}
+      } catch (error) {
+        if (error?.code !== 'ENOENT') {
+          throw error
+        }
+      }
 
       await writeFile(jsPath, jsSource)
     },

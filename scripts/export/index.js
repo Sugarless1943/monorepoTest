@@ -1,4 +1,5 @@
 import { mkdir, rm } from 'node:fs/promises'
+import { spawn } from 'node:child_process'
 import path from 'node:path'
 import { resolveExportPlan } from '#product'
 import { pathExists } from '../lib/fs.js'
@@ -17,6 +18,30 @@ const repoDir = path.resolve(import.meta.dirname, '../..')
 
 function toRelativePath(targetPath) {
   return path.relative(repoDir, targetPath).replaceAll(path.sep, '/')
+}
+
+function run(command, args, cwd) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd,
+      env: process.env,
+      stdio: 'inherit',
+      shell: true,
+    })
+
+    child.on('exit', (code) => {
+      if (code === 0) {
+        resolve()
+        return
+      }
+
+      reject(new Error(`${command} ${args.join(' ')} failed with code ${code}`))
+    })
+  })
+}
+
+async function writeLockfile(exportDir) {
+  await run('pnpm', ['install', '--lockfile-only'], exportDir)
 }
 
 export async function runExport(rawArgs = process.argv.slice(2)) {
@@ -75,6 +100,7 @@ export async function runExport(rawArgs = process.argv.slice(2)) {
   await rewriteProductFiles({ repoDir, exportDir, plan })
   await rewritePageProductImports({ exportDir, pages: plan.pages })
   await writeExportArtifacts({ repoDir, exportDir, plan, packageDirs })
+  await writeLockfile(exportDir)
 
   console.log(`Exported ${plan.profile.id} to ${toRelativePath(exportDir)}`)
 }

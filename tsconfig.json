@@ -16,5 +16,19 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "vite-env.d.ts"]
+  "include": [
+    "apps/**/*.ts",
+    "apps/**/*.vue",
+    "packages/**/*.ts",
+    "packages/**/*.vue",
+    "vite-env.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dists",
+    "exports",
+    ".tmp",
+    "**/dist",
+    "**/dist-test"
+  ]
 }

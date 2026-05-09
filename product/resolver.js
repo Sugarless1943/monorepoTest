@@ -330,7 +330,6 @@ export function resolveProfile(profileId = 'default') {
   const pages = sortPages(
     configuredPageSlugs.map((pageSlug) => getPage(pageSlug))
   )
-  const pageSlugs = pages.map((page) => page.slug)
 
   assertUniquePageFields(pages, profileId)
 

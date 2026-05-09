@@ -13,6 +13,9 @@
   "scripts": {
     "start": "cd apps/Sub && pnpm dev",
     "test": "pnpm run verify:fast",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "format:check": "prettier --check .",
     "build": "node ./scripts/build.js",
     "build:sub": "cd apps/Sub && pnpm build",
     "build:groupA": "node ./scripts/build.js group-a",
@@ -34,16 +37,22 @@
     "pnpm": ">=10.10.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.3.5",
     "@vitejs/plugin-vue": "^6.0.4",
     "esbuild": "^0.25.11",
     "eslint": "^10.0.3",
+    "eslint-plugin-vue": "^10.9.1",
     "git-format-staged": "^4.0.1",
+    "globals": "^17.6.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.3.2",
     "prettier": "3.8.1",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "typescript-eslint": "^8.59.2",
+    "vite": "^7.3.1",
+    "vue-eslint-parser": "^10.4.0",
+    "vue-tsc": "^3.2.8"
   },
   "lint-staged": {
     "**/*.{js,ts,vue,json,css,scss,md}": [
