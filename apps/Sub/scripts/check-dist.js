@@ -24,6 +24,8 @@ const knownGroupAssetFiles = new Set(listGroupAssetFileNames())
 const requiredFiles = [
   path.resolve(distDir, 'index.html'),
   path.resolve(distDir, 'assets/index.js'),
+  path.resolve(distDir, 'assets/framework.js'),
+  path.resolve(distDir, 'assets/element-plus.js'),
   path.resolve(distDir, 'assets/vendor.js'),
   path.resolve(distDir, 'shared/vue-runtime.js'),
   ...targetGroups.map((group) =>

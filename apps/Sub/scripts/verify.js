@@ -141,6 +141,8 @@ function collectPreviewPaths({ profile, targetPages }) {
 function collectPreviewAssets({ profile }) {
   return [
     '/assets/index.js',
+    '/assets/framework.js',
+    '/assets/element-plus.js',
     '/assets/vendor.js',
     '/shared/vue-runtime.js',
     ...profile.groups.map((group) => `/assets/${group.chunkFileName}`),

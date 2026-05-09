@@ -2,6 +2,50 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'node:path'
 
+function getNodeModulePackageName(id) {
+  const normalizedId = id.split(path.sep).join('/')
+  const marker = '/node_modules/'
+  const markerIndex = normalizedId.lastIndexOf(marker)
+
+  if (markerIndex === -1) {
+    return ''
+  }
+
+  const packagePath = normalizedId.slice(markerIndex + marker.length)
+  const [scopeOrName, name] = packagePath.split('/')
+
+  if (!scopeOrName) {
+    return ''
+  }
+
+  return scopeOrName.startsWith('@') ? `${scopeOrName}/${name}` : scopeOrName
+}
+
+function resolveVendorChunk(id) {
+  const packageName = getNodeModulePackageName(id)
+
+  if (!packageName) {
+    return undefined
+  }
+
+  if (
+    packageName === 'vue' ||
+    packageName === 'vue-router' ||
+    packageName.startsWith('@vue/')
+  ) {
+    return 'framework'
+  }
+
+  if (
+    packageName === 'element-plus' ||
+    packageName.startsWith('@element-plus/')
+  ) {
+    return 'element-plus'
+  }
+
+  return 'vendor'
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   base: '/',
@@ -31,11 +75,7 @@ export default defineConfig({
         chunkFileNames: 'assets/[name].js',
         // 静态资源命名格式
         assetFileNames: 'assets/[name].[ext]',
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            return 'vendor'
-          }
-        },
+        manualChunks: resolveVendorChunk,
       },
     },
   },

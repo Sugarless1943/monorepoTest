@@ -47,6 +47,8 @@ try {
       .filter(
         (file) =>
           /^index\d+\.(js|css)$/.test(file) ||
+          (isFullBuild &&
+            /^(index|vendor|framework|element-plus)\.(js|css)$/.test(file)) ||
           /^page-[a-z0-9-]+\.(js|css)$/.test(file) ||
           /^_plugin-vue_export-helper-.*\.mjs$/.test(file) ||
           targetGroupAssetFiles.has(file)
